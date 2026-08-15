@@ -154,7 +154,7 @@ async function placeOrder(event) {
     };
 
     try {
-        const apiUrl = window.FRESHJAIPUR_API_URL || "http://localhost:5000/api";
+        const apiUrl = window.FRESHJAIPUR_API_URL || "https://freshjaipur-api.onrender.com/api";
 
         const response = await fetch(`${apiUrl}/orders`, {
             method: "POST",
