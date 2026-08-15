@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreshJaipur Admin Orders</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f8f5;margin:0;color:#17231d}
+.wrap{max-width:1100px;margin:40px auto;padding:0 18px}.card{background:#fff;border:1px solid #e1e9e3;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 10px 35px #10241a0b}
+h1{margin:0 0 8px}.muted{color:#718078}input,button,select{padding:11px 13px;border-radius:9px;border:1px solid #d6e1da;font:inherit}button{cursor:pointer;background:#198754;color:#fff;border:0;font-weight:700}
+.login{max-width:430px;margin:90px auto}.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.order{border-left:5px solid #198754}.top{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.badge{padding:6px 10px;border-radius:99px;background:#edf8f2;color:#198754;font-weight:700;font-size:12px}
+.items{background:#f7faf8;padding:12px;border-radius:10px;margin:12px 0}.map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}.danger{background:#b94d4d}
+#app{display:none}
+</style>
+</head>
+<body>
+<div id="login" class="wrap login card">
+<h2>FreshJaipur Admin</h2><p class="muted">Login to view customer orders.</p>
+<input id="email" placeholder="Admin email" style="width:100%;box-sizing:border-box;margin:6px 0">
+<input id="password" type="password" placeholder="Admin password" style="width:100%;box-sizing:border-box;margin:6px 0">
+<button onclick="login()" style="width:100%;margin-top:8px">Login</button>
+<p id="loginMsg" class="muted"></p>
+</div>
+
+<div id="app" class="wrap">
+<div class="top card"><div><h1>FreshJaipur Orders</h1><p class="muted">Manage incoming orders and delivery status.</p></div>
+<div class="row" style="align-items:center;flex:0 0 auto"><button onclick="loadOrders()">Refresh</button><button class="danger" onclick="logout()">Logout</button></div></div>
+<div id="orders"></div>
+</div>
+
+<script>
+const API = location.origin + "/api";
+let token = localStorage.getItem("freshjaipur_admin_token") || "";
+
+function login() {
+  const emailValue = document.getElementById("email").value.trim();
+  const passwordValue = document.getElementById("password").value;
+
+  fetch(API + "/admin/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      email: emailValue,
+      password: passwordValue
+    })
+  })
+    .then(r => r.json().then(x => ({ ok: r.ok, x })))
+    .then(({ ok, x }) => {
+      if (!ok) throw new Error(x.message);
+
+      token = x.token;
+      localStorage.setItem("freshjaipur_admin_token", token);
+
+      loginBox(false);
+      loadOrders();
+    })
+    .catch(e => {
+      document.getElementById("loginMsg").textContent = e.message;
+    });
+}
+
+function loginBox(show) {
+  const loginEl = document.getElementById("login");
+  const appEl = document.getElementById("app");
+
+  loginEl.style.display = show ? "block" : "none";
+  appEl.style.display = show ? "none" : "block";
+}
+
+function logout() {
+  localStorage.removeItem("freshjaipur_admin_token");
+  token = "";
+  loginBox(true);
+}
+
+async function loadOrders() {
+  try {
+    const r = await fetch(API + "/admin/orders", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    if (r.status === 401) {
+      logout();
+      return;
+    }
+
+    const orders = await r.json();
+
+    const ordersContainer = document.getElementById("orders");
+
+    ordersContainer.innerHTML = orders.length
+      ? orders.map(orderCard).join("")
+      : '<div class="card"><h2>No orders yet.</h2></div>';
+
+  } catch (error) {
+    document.getElementById("orders").innerHTML =
+      '<div class="card"><h2>Could not load orders.</h2></div>';
+
+    console.error(error);
+  }
+}
+
+function orderCard(o) {
+  const items = o.items
+    .map(i =>
+      `${esc(i.name)} — ${weight(i.grams)} × ${i.quantity} = ₹${i.price * i.quantity}`
+    )
+    .join("<br>");
+
+  const map = o.location?.googleMapsUrl
+    ? `<a class="map" target="_blank" href="${o.location.googleMapsUrl}">
+        📍 Open delivery location in Google Maps
+       </a>`
+    : "<span class='muted'>No exact map pin</span>";
+
+  return `
+    <div class="card order">
+      <div class="top">
+        <div>
+          <h2>${esc(o.orderId)}</h2>
+          <div class="muted">
+            ${new Date(o.createdAt).toLocaleString()}
+          </div>
+        </div>
+
+        <span class="badge">${esc(o.status)}</span>
+      </div>
+
+      <p>
+        <b>${esc(o.customer.name)}</b> · ${esc(o.customer.phone)}
+      </p>
+
+      <p>
+        ${esc(o.customer.address)},
+        ${esc(o.customer.city)} -
+        ${esc(o.customer.pincode)}
+        ${o.customer.landmark
+          ? ` · ${esc(o.customer.landmark)}`
+          : ""}
+      </p>
+
+      <div class="items">
+        ${items}
+      </div>
+
+      <p>
+        <b>Total: ₹${o.total}</b>
+      </p>
+
+      ${map}
+
+      <div style="margin-top:15px">
+        <select onchange="setStatus('${o.orderId}', this.value)">
+          ${
+            ["new", "confirmed", "out-for-delivery", "delivered", "cancelled"]
+              .map(
+                s =>
+                  `<option ${s === o.status ? "selected" : ""}>${s}</option>`
+              )
+              .join("")
+          }
+        </select>
+      </div>
+    </div>
+  `;
+}
+
+async function setStatus(id, status) {
+  const r = await fetch(
+    API + "/admin/orders/" + encodeURIComponent(id) + "/status",
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ status })
+    }
+  );
+
+  if (r.ok) {
+    loadOrders();
+  } else {
+    alert("Status update failed.");
+  }
+}
+
+function weight(g) {
+  return g >= 1000
+    ? (g / 1000) + " kg"
+    : g + " g";
+}
+
+function esc(v) {
+  return String(v ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[c])
+  );
+}
+
+if (token) {
+  loginBox(false);
+  loadOrders();
+}
+</script>
+</body>
+</html>

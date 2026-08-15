@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout | FreshJaipur</title>
+<meta name="description" content="Enter your delivery details and location to place your FreshJaipur vegetable order.">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/shop.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body>
+<div id="navbar"></div>
+
+<main class="shop-page">
+<section class="container">
+    <div class="shop-heading">
+        <span class="section-label"><i class="fa-solid fa-location-dot"></i> Secure Checkout</span>
+        <h1>Delivery Details</h1>
+        <p>Fill in your details and share your exact delivery location.</p>
+    </div>
+
+    <form id="checkoutForm">
+        <div class="checkout-layout">
+            <div>
+                <div class="shop-card checkout-form">
+                    <h2><i class="fa-solid fa-user"></i> Customer Information</h2>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="customerName">Full Name *</label>
+                            <input id="customerName" name="customerName" required autocomplete="name" placeholder="Your full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Mobile Number *</label>
+                            <input id="phone" name="phone" required type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="tel" placeholder="10-digit mobile number">
+                        </div>
+
+                        <div class="form-group full">
+                            <label for="address">Full Delivery Address *</label>
+                            <textarea id="address" name="address" required autocomplete="street-address" placeholder="House / Flat, Street, Area"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="landmark">Landmark</label>
+                            <input id="landmark" name="landmark" placeholder="Nearby landmark">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pincode">Pincode *</label>
+                            <input id="pincode" name="pincode" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City *</label>
+                            <input id="city" name="city" required value="Jaipur">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes">Delivery Notes</label>
+                            <input id="notes" name="notes" placeholder="Any special instruction">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shop-card location-card" style="margin-top:22px;">
+                    <h2><i class="fa-solid fa-map-location-dot"></i> Delivery Location</h2>
+                    <p class="location-intro">For accurate delivery, use your current location or update the address and open it on Google Maps.</p>
+
+                    <div class="location-actions">
+                        <button type="button" class="location-action" id="useLocation">
+                            <i class="fa-solid fa-location-crosshairs"></i> Use My Current Location
+                        </button>
+                        <button type="button" class="location-action" id="addressOnMap">
+                            <i class="fa-solid fa-magnifying-glass-location"></i> Find Address on Map
+                        </button>
+                    </div>
+
+                    <iframe id="googleMapFrame" class="location-map"
+                        title="Delivery location map"
+                        loading="lazy"
+                        src="https://www.google.com/maps?q=Jaipur%2C%20Rajasthan&output=embed">
+                    </iframe>
+
+                    <div class="location-coordinates" id="locationStatus">
+                        Location not selected yet. Please use the location button for an exact pin.
+                    </div>
+
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                </div>
+            </div>
+
+            <aside class="shop-card summary-card">
+                <h2>Your Order</h2>
+                <div id="checkoutItems"></div>
+                <div class="summary-row"><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div>
+                <div class="summary-row"><span>Delivery</span><strong>To be confirmed</strong></div>
+                <div class="summary-row total"><span>Estimated Total</span><strong id="checkoutTotal">₹0</strong></div>
+
+                <button class="shop-primary-btn" type="submit">
+                    <i class="fa-solid fa-check"></i> Place Order
+                </button>
+
+                <div class="place-order-note">
+                    Your selected location and customer details will be saved with the order on this device. Order place hone ke baad customer ko order confirmation milega. Business WhatsApp number <strong>js/store-config.js</strong> mein add karne par order details WhatsApp par directly share ki ja sakengi.
+                </div>
+            </aside>
+        </div>
+    </form>
+</section>
+</main>
+
+<div id="footer"></div>
+
+<script src="/js/cart.js"></script>
+<script src="/js/include.js"></script>
+<script src="/js/navbar.js"></script>
+<script src="/js/api-config.js"></script>
+<script src="/js/checkout.js"></script>
+</body>
+</html>
