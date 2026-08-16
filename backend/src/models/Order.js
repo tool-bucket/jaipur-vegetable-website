@@ -1,13 +1,13 @@
-
 const mongoose = require("mongoose");
 
 const orderItemSchema = new mongoose.Schema({
   productId: { type: String, required: true },
-  name: { type: String, required: true },
-  grams: { type: Number, required: true },
-  quantity: { type: Number, required: true, min: 1 },
+  name: { type: String, required: true, trim: true },
+  grams: { type: Number, required: true, min: 250, max: 100000 },
+  quantity: { type: Number, required: true, min: 1, max: 1000 },
   price: { type: Number, required: true, min: 0 },
-  image: { type: String, default: "" }
+  image: { type: String, default: "" },
+  note: { type: String, default: "", trim: true, maxlength: 300 }
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -19,7 +19,7 @@ const orderSchema = new mongoose.Schema({
     landmark: { type: String, default: "", trim: true },
     pincode: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true },
-    notes: { type: String, default: "", trim: true }
+    notes: { type: String, default: "", trim: true, maxlength: 300 }
   },
   location: {
     latitude: { type: Number, default: null },
