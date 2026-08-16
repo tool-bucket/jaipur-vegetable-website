@@ -124,4 +124,16 @@
         <priority>0.8</priority>
     </url>
 
+    <url><loc>https://www.freshjaipur.site/cart/</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+    <url><loc>https://www.freshjaipur.site/checkout/</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+    <url><loc>https://www.freshjaipur.site/order-success/</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+
+    <!-- Bulk Mala -->
+    <url>
+        <loc>https://www.freshjaipur.site/mala/</loc>
+        <lastmod>2026-08-16</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
 </urlset>
