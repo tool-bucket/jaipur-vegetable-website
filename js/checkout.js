@@ -19,6 +19,7 @@ function initCheckout() {
     }
 
     renderCheckoutItems(cart);
+    renderBulkMalaDetails(cart);
 
     document.getElementById("useLocation")?.addEventListener("click", useCurrentLocation);
     document.getElementById("addressOnMap")?.addEventListener("click", findAddressOnMap);
@@ -33,7 +34,7 @@ function renderCheckoutItems(cart) {
         return `
             <div class="checkout-product-summary">
                 <div class="summary-row">
-                    <span>${escapeCheckout(item.name)} × ${item.quantity}<small>${escapeCheckout(formatCheckoutWeight(item.grams))}</small></span>
+                    <span>${escapeCheckout(item.name)} × ${item.quantity}<small>${item.unit === "mala" ? `Bulk · ${item.quantity} malas · ₹${item.price}/mala` : escapeCheckout(formatCheckoutWeight(item.grams))}</small></span>
                     <strong>₹${item.price * item.quantity}</strong>
                 </div>
                 ${item.note ? `<div class="checkout-item-note"><i class="fa-regular fa-note-sticky"></i> ${escapeCheckout(item.note)}</div>` : ""}
@@ -44,6 +45,36 @@ function renderCheckoutItems(cart) {
     document.getElementById("checkoutItems").innerHTML = html;
     document.getElementById("checkoutSubtotal").textContent = `₹${subtotal}`;
     document.getElementById("checkoutTotal").textContent = `₹${subtotal}`;
+}
+
+
+function renderBulkMalaDetails(cart) {
+    const hasMala = cart.some(item => item.unit === "mala");
+    const formCard = document.querySelector(".checkout-form");
+    const formGrid = formCard?.querySelector(".form-grid");
+    if (!hasMala || !formGrid || document.getElementById("bulkMalaDetails")) return;
+
+    const box = document.createElement("div");
+    box.id = "bulkMalaDetails";
+    box.className = "bulk-mala-checkout-box";
+    box.innerHTML = `
+      <div class="bulk-mala-checkout-title"><i class="fa-solid fa-spa"></i> Bulk Mala / Function Details</div>
+      <p>Please share these details so we can prepare and confirm your bulk mala order.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="functionType">Function / Event Type</label>
+          <input id="functionType" name="functionType" placeholder="Wedding, Birthday, Function, Event...">
+        </div>
+        <div class="form-group">
+          <label for="functionDate">Required Date</label>
+          <input id="functionDate" name="functionDate" type="date">
+        </div>
+        <div class="form-group full">
+          <label for="malaRequirements">Bulk Mala Requirements</label>
+          <textarea id="malaRequirements" name="malaRequirements" maxlength="500" placeholder="Example: Red gulab malas should be fresh and tightly made. Please deliver before 10 AM."></textarea>
+        </div>
+      </div>`;
+    formCard.appendChild(box);
 }
 
 function useCurrentLocation() {
@@ -143,6 +174,11 @@ async function placeOrder(event) {
             city: data.get("city"),
             notes: data.get("notes")
         },
+        functionDetails: {
+            type: String(data.get("functionType") || "").trim().slice(0, 100),
+            date: String(data.get("functionDate") || "").trim().slice(0, 30),
+            requirements: String(data.get("malaRequirements") || "").trim().slice(0, 500)
+        },
         location: {
             latitude: latitude || null,
             longitude: longitude || null,
@@ -172,6 +208,7 @@ async function placeOrder(event) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 customer: order.customer,
+                functionDetails: order.functionDetails,
                 location: order.location,
                 items: order.items,
                 subtotal: order.subtotal,
