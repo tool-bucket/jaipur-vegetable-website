@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -13,7 +12,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(",").map(v => v.trim()) : true
+  origin: process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(",").map(v => v.trim())
+    : true
 }));
 app.use(express.json({ limit: "1mb" }));
 
@@ -53,19 +54,28 @@ app.post("/api/orders", async (req, res) => {
 
     const cleanItems = items.map(item => ({
       productId: String(item.productId || item.id || ""),
-      name: String(item.name || ""),
+      name: String(item.name || "").slice(0, 120),
       grams: Number(item.grams || 0),
       quantity: Number(item.quantity || 0),
       price: Number(item.price || 0),
-      image: String(item.image || "")
+      image: String(item.image || "").slice(0, 500),
+      note: String(item.note || "").trim().slice(0, 300)
     }));
 
     if (cleanItems.some(item =>
-      !item.productId || !item.name ||
-      ![250, 500, 1000].includes(item.grams) ||
-      item.quantity < 1 || item.price < 0
+      !item.productId ||
+      !item.name ||
+      !Number.isFinite(item.grams) ||
+      item.grams < 250 ||
+      item.grams > 100000 ||
+      item.grams % 250 !== 0 ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity < 1 ||
+      item.quantity > 1000 ||
+      !Number.isFinite(item.price) ||
+      item.price < 0
     )) {
-      return res.status(400).json({ message: "Invalid product/quantity data." });
+      return res.status(400).json({ message: "Invalid product or quantity data." });
     }
 
     const subtotal = Math.round(
@@ -79,18 +89,18 @@ app.post("/api/orders", async (req, res) => {
     const order = await Order.create({
       orderId: makeOrderId(),
       customer: {
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
-        landmark: customer.landmark || "",
-        pincode: customer.pincode,
-        city: customer.city,
-        notes: customer.notes || ""
+        name: String(customer.name).trim().slice(0, 100),
+        phone: String(customer.phone).trim().slice(0, 20),
+        address: String(customer.address).trim().slice(0, 500),
+        landmark: String(customer.landmark || "").trim().slice(0, 150),
+        pincode: String(customer.pincode).trim().slice(0, 10),
+        city: String(customer.city).trim().slice(0, 80),
+        notes: String(customer.notes || "").trim().slice(0, 300)
       },
       location: {
         latitude: location?.latitude ? Number(location.latitude) : null,
         longitude: location?.longitude ? Number(location.longitude) : null,
-        googleMapsUrl: location?.googleMapsUrl || ""
+        googleMapsUrl: String(location?.googleMapsUrl || "").slice(0, 600)
       },
       items: cleanItems,
       subtotal,
@@ -131,11 +141,33 @@ app.patch("/api/admin/orders/:orderId/status", requireAdmin, async (req, res) =>
       { new: true }
     ).lean();
 
-    if (!order) return res.status(404).json({ message: "Order not found." });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
 
     res.json(order);
   } catch {
     res.status(500).json({ message: "Could not update order status." });
+  }
+});
+
+/* Admin-only permanent order deletion. */
+app.delete("/api/admin/orders/:orderId", requireAdmin, async (req, res) => {
+  try {
+    const order = await Order.findOneAndDelete({
+      orderId: req.params.orderId
+    }).lean();
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    res.json({
+      message: "Order deleted successfully.",
+      orderId: order.orderId
+    });
+  } catch {
+    res.status(500).json({ message: "Could not delete order." });
   }
 });
 
