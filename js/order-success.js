@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", initSuccess);
 
 function initSuccess() {
@@ -13,11 +12,12 @@ function initSuccess() {
     document.getElementById("orderId").textContent = `Order ID: ${order.id}`;
 
     const items = order.items.map(item =>
-        `${item.name} × ${item.quantity} = ₹${item.price * item.quantity}`
-    ).join("<br>");
+        `<div style="margin:7px 0"><strong>${safe(item.name)}</strong> × ${item.quantity} (${safe(formatWeight(item.grams))}) = ₹${item.price * item.quantity}
+        ${item.note ? `<div class="checkout-item-note" style="margin-top:5px"><i class="fa-regular fa-note-sticky"></i> ${safe(item.note)}</div>` : ""}</div>`
+    ).join("");
 
     const locationHTML = order.location.googleMapsUrl
-        ? `<p><strong>Delivery Location:</strong> <a href="${order.location.googleMapsUrl}" target="_blank" rel="noopener">Open in Google Maps</a></p>`
+        ? `<p><strong>Delivery Location:</strong> <a href="${safe(order.location.googleMapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></p>`
         : `<p><strong>Delivery Location:</strong> Address only</p>`;
 
     document.getElementById("orderDetails").innerHTML = `
@@ -25,7 +25,8 @@ function initSuccess() {
         <p><strong>Mobile:</strong> ${safe(order.customer.phone)}</p>
         <p><strong>Address:</strong> ${safe(order.customer.address)}, ${safe(order.customer.city)} - ${safe(order.customer.pincode)}</p>
         ${order.customer.landmark ? `<p><strong>Landmark:</strong> ${safe(order.customer.landmark)}</p>` : ""}
-        <p><strong>Products:</strong><br>${items}</p>
+        ${order.customer.notes ? `<p><strong>Delivery Note:</strong> ${safe(order.customer.notes)}</p>` : ""}
+        <p><strong>Products:</strong></p>${items}
         <p><strong>Total:</strong> ₹${order.total}</p>
         ${locationHTML}
     `;
@@ -50,7 +51,7 @@ function initSuccess() {
 
 function makeOrderText(order) {
     const items = order.items.map(item =>
-        `- ${item.name} (${formatWeight(item.grams)}) x ${item.quantity} = ₹${item.price * item.quantity}`
+        `- ${item.name} (${formatWeight(item.grams)}) x ${item.quantity} = ₹${item.price * item.quantity}${item.note ? `\n  Product instruction: ${item.note}` : ""}`
     ).join("\n");
 
     return `FreshJaipur Order ${order.id}
@@ -59,6 +60,7 @@ Customer: ${order.customer.name}
 Mobile: ${order.customer.phone}
 Address: ${order.customer.address}, ${order.customer.city} - ${order.customer.pincode}
 Landmark: ${order.customer.landmark || "N/A"}
+Delivery Note: ${order.customer.notes || "N/A"}
 
 Products:
 ${items}
@@ -75,4 +77,9 @@ function safe(value) {
     }[char]));
 }
 
-function formatWeight(g){return g>=1000&&g%1000===0?`${g/1000} kg`:`${g} g`;}
+function formatWeight(g){
+    const n=Number(g)||0;
+    if(n>=1000 && n%1000===0) return `${n/1000} kg`;
+    if(n>=1000) return `${(n/1000).toFixed(2).replace(/\.00$/,"")} kg`;
+    return `${n} g`;
+}
