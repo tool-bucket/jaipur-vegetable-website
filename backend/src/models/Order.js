@@ -3,8 +3,10 @@ const mongoose = require("mongoose");
 const orderItemSchema = new mongoose.Schema({
   productId: { type: String, required: true },
   name: { type: String, required: true, trim: true },
-  grams: { type: Number, required: true, min: 250, max: 100000 },
-  quantity: { type: Number, required: true, min: 1, max: 1000 },
+  unit: { type: String, enum: ["kg", "mala"], default: "kg" },
+  grams: { type: Number, required: true, min: 0, max: 100000 },
+  quantity: { type: Number, required: true, min: 1, max: 50000 },
+  minQuantity: { type: Number, default: 1, min: 1, max: 50000 },
   price: { type: Number, required: true, min: 0 },
   image: { type: String, default: "" },
   note: { type: String, default: "", trim: true, maxlength: 300 }
@@ -21,14 +23,19 @@ const orderSchema = new mongoose.Schema({
     city: { type: String, required: true, trim: true },
     notes: { type: String, default: "", trim: true, maxlength: 300 }
   },
+  functionDetails: {
+    type: { type: String, default: "", trim: true, maxlength: 100 },
+    date: { type: String, default: "", trim: true, maxlength: 30 },
+    requirements: { type: String, default: "", trim: true, maxlength: 500 }
+  },
   location: {
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
     googleMapsUrl: { type: String, default: "" }
   },
   items: { type: [orderItemSchema], required: true },
-  subtotal: { type: Number, required: true, min: 200 },
-  total: { type: Number, required: true, min: 200 },
+  subtotal: { type: Number, required: true, min: 0 },
+  total: { type: Number, required: true, min: 0 },
   status: {
     type: String,
     enum: ["new", "confirmed", "out-for-delivery", "delivered", "cancelled"],
