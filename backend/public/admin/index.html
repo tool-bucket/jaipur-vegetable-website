@@ -1,217 +1,264 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FreshJaipur Admin Orders</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreshJaipur Orders</title>
 <style>
+*{box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#f4f8f5;margin:0;color:#17231d}
-.wrap{max-width:1100px;margin:40px auto;padding:0 18px}.card{background:#fff;border:1px solid #e1e9e3;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 10px 35px #10241a0b}
-h1{margin:0 0 8px}.muted{color:#718078}input,button,select{padding:11px 13px;border-radius:9px;border:1px solid #d6e1da;font:inherit}button{cursor:pointer;background:#198754;color:#fff;border:0;font-weight:700}
-.login{max-width:430px;margin:90px auto}.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
-.order{border-left:5px solid #198754}.top{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.badge{padding:6px 10px;border-radius:99px;background:#edf8f2;color:#198754;font-weight:700;font-size:12px}
-.items{background:#f7faf8;padding:12px;border-radius:10px;margin:12px 0}.map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}.danger{background:#b94d4d}
-#app{display:none}
+.wrap{max-width:1150px;margin:35px auto;padding:0 18px}
+.card{background:#fff;border:1px solid #e1e9e3;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 10px 35px #10241a0b}
+h1,h2,h3,p{margin-top:0}.muted{color:#718078}
+.login{max-width:430px;margin:90px auto}
+input,button,select{padding:11px 13px;border-radius:9px;border:1px solid #d6e1da;font:inherit}
+button{cursor:pointer;background:#198754;color:#fff;border:0;font-weight:700}
+button:disabled{opacity:.6;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.top{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+.top .row{flex:0 0 auto}
+.badge{padding:6px 10px;border-radius:99px;background:#edf8f2;color:#198754;font-weight:700;font-size:12px}
+.danger{background:#b94d4d}.secondary{background:#edf8f2;color:#198754}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid #e1e9e3;border-radius:16px;padding:17px}
+.stat strong{display:block;font-size:25px;margin-top:5px}.stat span{font-size:12px;color:#718078}
+.filters{display:grid;grid-template-columns:1.5fr 220px auto;gap:10px;margin-bottom:18px}
+.filters input,.filters select{width:100%;background:#fff}
+.order{border-left:5px solid #198754}.order.cancelled{border-left-color:#b94d4d}
+.order-head{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.items{background:#f7faf8;padding:14px;border-radius:12px;margin:13px 0}
+.item-row{padding:9px 0;border-bottom:1px solid #e4ece7}.item-row:last-child{border-bottom:0}
+.note{margin-top:6px;padding:8px 10px;border-radius:8px;background:#fff8e8;color:#725b28;font-size:12px}
+.customer-note{padding:11px 12px;border-radius:10px;background:#eef8f3;color:#53645b;font-size:12px;margin:12px 0}
+.map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}
+.actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.actions select{min-width:180px}.delete-btn{background:#b94d4d}
+.empty{text-align:center;padding:45px}
+@media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.wrap{margin-top:18px}}
 </style>
 </head>
 <body>
+
 <div id="login" class="wrap login card">
-<h2>FreshJaipur Admin</h2><p class="muted">Login to view customer orders.</p>
-<input id="email" placeholder="Admin email" style="width:100%;box-sizing:border-box;margin:6px 0">
-<input id="password" type="password" placeholder="Admin password" style="width:100%;box-sizing:border-box;margin:6px 0">
+<h2>FreshJaipur Admin</h2>
+<p class="muted">Login to securely manage customer orders.</p>
+<input id="email" placeholder="Admin email" autocomplete="username" style="width:100%;margin:6px 0">
+<input id="password" type="password" placeholder="Admin password" autocomplete="current-password" style="width:100%;margin:6px 0">
 <button onclick="login()" style="width:100%;margin-top:8px">Login</button>
 <p id="loginMsg" class="muted"></p>
 </div>
 
-<div id="app" class="wrap">
-<div class="top card"><div><h1>FreshJaipur Orders</h1><p class="muted">Manage incoming orders and delivery status.</p></div>
-<div class="row" style="align-items:center;flex:0 0 auto"><button onclick="loadOrders()">Refresh</button><button class="danger" onclick="logout()">Logout</button></div></div>
+<div id="app" class="wrap" style="display:none">
+<div class="top card">
+  <div><h1>FreshJaipur Orders</h1><p class="muted">Manage incoming orders, customer instructions and delivery status.</p></div>
+  <div class="row">
+    <button class="secondary" onclick="loadOrders()">↻ Refresh</button>
+    <button class="danger" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Total Orders</span><strong id="statTotal">0</strong></div>
+  <div class="stat"><span>New</span><strong id="statNew">0</strong></div>
+  <div class="stat"><span>Out for Delivery</span><strong id="statDelivery">0</strong></div>
+  <div class="stat"><span>Delivered</span><strong id="statDelivered">0</strong></div>
+</div>
+
+<div class="filters">
+  <input id="search" placeholder="Search order ID, name, phone or product..." oninput="renderOrders()">
+  <select id="statusFilter" onchange="renderOrders()">
+    <option value="">All statuses</option>
+    <option value="new">New</option>
+    <option value="confirmed">Confirmed</option>
+    <option value="out-for-delivery">Out for delivery</option>
+    <option value="delivered">Delivered</option>
+    <option value="cancelled">Cancelled</option>
+  </select>
+  <button class="secondary" onclick="clearFilters()">Clear Filters</button>
+</div>
+
 <div id="orders"></div>
 </div>
 
 <script>
 const API = location.origin + "/api";
 let token = localStorage.getItem("freshjaipur_admin_token") || "";
+let allOrders = [];
 
 function login() {
   const emailValue = document.getElementById("email").value.trim();
   const passwordValue = document.getElementById("password").value;
 
   fetch(API + "/admin/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      email: emailValue,
-      password: passwordValue
-    })
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:emailValue,password:passwordValue})
   })
-    .then(r => r.json().then(x => ({ ok: r.ok, x })))
-    .then(({ ok, x }) => {
-      if (!ok) throw new Error(x.message);
-
-      token = x.token;
-      localStorage.setItem("freshjaipur_admin_token", token);
-
-      loginBox(false);
-      loadOrders();
-    })
-    .catch(e => {
-      document.getElementById("loginMsg").textContent = e.message;
-    });
+  .then(r=>r.json().then(x=>({ok:r.ok,x})))
+  .then(({ok,x})=>{
+    if(!ok) throw new Error(x.message || "Login failed.");
+    token=x.token;
+    localStorage.setItem("freshjaipur_admin_token",token);
+    loginBox(false);
+    loadOrders();
+  })
+  .catch(e=>document.getElementById("loginMsg").textContent=e.message);
 }
 
 function loginBox(show) {
-  const loginEl = document.getElementById("login");
-  const appEl = document.getElementById("app");
-
-  loginEl.style.display = show ? "block" : "none";
-  appEl.style.display = show ? "none" : "block";
+  document.getElementById("login").style.display=show?"block":"none";
+  document.getElementById("app").style.display=show?"none":"block";
 }
 
 function logout() {
   localStorage.removeItem("freshjaipur_admin_token");
-  token = "";
+  token="";
+  allOrders=[];
   loginBox(true);
 }
 
 async function loadOrders() {
+  const ordersEl=document.getElementById("orders");
+  ordersEl.innerHTML='<div class="card empty"><p class="muted">Loading orders...</p></div>';
+
   try {
-    const r = await fetch(API + "/admin/orders", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    });
-
-    if (r.status === 401) {
-      logout();
-      return;
-    }
-
-    const orders = await r.json();
-
-    const ordersContainer = document.getElementById("orders");
-
-    ordersContainer.innerHTML = orders.length
-      ? orders.map(orderCard).join("")
-      : '<div class="card"><h2>No orders yet.</h2></div>';
-
-  } catch (error) {
-    document.getElementById("orders").innerHTML =
-      '<div class="card"><h2>Could not load orders.</h2></div>';
-
-    console.error(error);
+    const r=await fetch(API+"/admin/orders",{headers:{Authorization:"Bearer "+token}});
+    if(r.status===401){logout();return;}
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.message || "Could not load orders.");
+    allOrders=Array.isArray(data)?data:[];
+    updateStats();
+    renderOrders();
+  } catch(error) {
+    ordersEl.innerHTML='<div class="card empty"><h2>Could not load orders.</h2><p class="muted">'+esc(error.message)+'</p></div>';
   }
+}
+
+function updateStats(){
+  document.getElementById("statTotal").textContent=allOrders.length;
+  document.getElementById("statNew").textContent=allOrders.filter(o=>o.status==="new").length;
+  document.getElementById("statDelivery").textContent=allOrders.filter(o=>o.status==="out-for-delivery").length;
+  document.getElementById("statDelivered").textContent=allOrders.filter(o=>o.status==="delivered").length;
+}
+
+function renderOrders(){
+  const root=document.getElementById("orders");
+  const q=(document.getElementById("search").value||"").trim().toLowerCase();
+  const filter=document.getElementById("statusFilter").value;
+
+  const filtered=allOrders.filter(o=>{
+    const hay=[
+      o.orderId,o.customer?.name,o.customer?.phone,o.customer?.city,
+      ...(o.items||[]).map(i=>i.name)
+    ].join(" ").toLowerCase();
+    return (!q || hay.includes(q)) && (!filter || o.status===filter);
+  });
+
+  if(!filtered.length){
+    root.innerHTML='<div class="card empty"><h2>No matching orders</h2><p class="muted">Try changing the search or status filter.</p></div>';
+    return;
+  }
+  root.innerHTML=filtered.map(orderCard).join("");
 }
 
 function orderCard(o) {
-  const items = o.items
-    .map(i =>
-      `${esc(i.name)} — ${weight(i.grams)} × ${i.quantity} = ₹${i.price * i.quantity}`
-    )
-    .join("<br>");
+  const statusOptions=["new","confirmed","out-for-delivery","delivered","cancelled"];
+  const items=(o.items||[]).map(i=>`
+    <div class="item-row">
+      <strong>${esc(i.name)}</strong> — ${weight(i.grams)} × ${i.quantity} = ₹${money(i.price*i.quantity)}
+      ${i.note?`<div class="note"><b>Product instruction:</b> ${esc(i.note)}</div>`:""}
+    </div>
+  `).join("");
 
-  const map = o.location?.googleMapsUrl
-    ? `<a class="map" target="_blank" href="${o.location.googleMapsUrl}">
-        📍 Open delivery location in Google Maps
-       </a>`
+  const map=o.location?.googleMapsUrl
+    ? `<a class="map" target="_blank" rel="noopener" href="${esc(o.location.googleMapsUrl)}">📍 Open delivery location in Google Maps</a>`
     : "<span class='muted'>No exact map pin</span>";
 
   return `
-    <div class="card order">
-      <div class="top">
-        <div>
-          <h2>${esc(o.orderId)}</h2>
-          <div class="muted">
-            ${new Date(o.createdAt).toLocaleString()}
-          </div>
-        </div>
-
-        <span class="badge">${esc(o.status)}</span>
+  <div class="card order ${o.status==="cancelled"?"cancelled":""}">
+    <div class="order-head">
+      <div>
+        <h2>${esc(o.orderId)}</h2>
+        <div class="muted">${formatDate(o.createdAt)}</div>
       </div>
-
-      <p>
-        <b>${esc(o.customer.name)}</b> · ${esc(o.customer.phone)}
-      </p>
-
-      <p>
-        ${esc(o.customer.address)},
-        ${esc(o.customer.city)} -
-        ${esc(o.customer.pincode)}
-        ${o.customer.landmark
-          ? ` · ${esc(o.customer.landmark)}`
-          : ""}
-      </p>
-
-      <div class="items">
-        ${items}
-      </div>
-
-      <p>
-        <b>Total: ₹${o.total}</b>
-      </p>
-
-      ${map}
-
-      <div style="margin-top:15px">
-        <select onchange="setStatus('${o.orderId}', this.value)">
-          ${
-            ["new", "confirmed", "out-for-delivery", "delivered", "cancelled"]
-              .map(
-                s =>
-                  `<option ${s === o.status ? "selected" : ""}>${s}</option>`
-              )
-              .join("")
-          }
-        </select>
-      </div>
+      <span class="badge">${esc(labelStatus(o.status))}</span>
     </div>
-  `;
+
+    <p><b>${esc(o.customer?.name)}</b> · ${esc(o.customer?.phone)}</p>
+    <p>${esc(o.customer?.address)}, ${esc(o.customer?.city)} - ${esc(o.customer?.pincode)}${o.customer?.landmark?` · ${esc(o.customer.landmark)}`:""}</p>
+
+    ${o.customer?.notes?`<div class="customer-note"><b>Delivery instruction:</b> ${esc(o.customer.notes)}</div>`:""}
+
+    <div class="items">${items}</div>
+
+    <p><b>Total: ₹${money(o.total)}</b></p>
+    ${map}
+
+    <div class="actions">
+      <select onchange="setStatus('${js(o.orderId)}',this.value)">
+        ${statusOptions.map(s=>`<option value="${s}" ${s===o.status?"selected":""}>${labelStatus(s)}</option>`).join("")}
+      </select>
+      <button class="delete-btn" onclick="deleteOrder('${js(o.orderId)}')">🗑 Delete Order</button>
+    </div>
+  </div>`;
 }
 
-async function setStatus(id, status) {
-  const r = await fetch(
-    API + "/admin/orders/" + encodeURIComponent(id) + "/status",
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify({ status })
-    }
+async function setStatus(id,status){
+  try{
+    const r=await fetch(API+"/admin/orders/"+encodeURIComponent(id)+"/status",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},
+      body:JSON.stringify({status})
+    });
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.message||"Status update failed.");
+    const index=allOrders.findIndex(o=>o.orderId===id);
+    if(index>=0) allOrders[index]=data;
+    updateStats(); renderOrders();
+  }catch(e){alert(e.message);}
+}
+
+async function deleteOrder(id){
+  const order=allOrders.find(o=>o.orderId===id);
+  if(!order) return;
+
+  const ok=confirm(
+    "Delete order "+id+" permanently?\\n\\nCustomer: "+(order.customer?.name||"")+
+    "\\nTotal: ₹"+money(order.total)+
+    "\\n\\nThis action cannot be undone."
   );
+  if(!ok) return;
 
-  if (r.ok) {
-    loadOrders();
-  } else {
-    alert("Status update failed.");
-  }
+  try{
+    const r=await fetch(API+"/admin/orders/"+encodeURIComponent(id),{
+      method:"DELETE",
+      headers:{Authorization:"Bearer "+token}
+    });
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.message||"Delete failed.");
+    allOrders=allOrders.filter(o=>o.orderId!==id);
+    updateStats(); renderOrders();
+  }catch(e){alert(e.message);}
 }
 
-function weight(g) {
-  return g >= 1000
-    ? (g / 1000) + " kg"
-    : g + " g";
+function clearFilters(){
+  document.getElementById("search").value="";
+  document.getElementById("statusFilter").value="";
+  renderOrders();
 }
+function labelStatus(s){
+  return ({new:"New",confirmed:"Confirmed","out-for-delivery":"Out for Delivery",delivered:"Delivered",cancelled:"Cancelled"})[s]||s;
+}
+function weight(g){
+  const n=Number(g)||0;
+  return n>=1000 ? ((n%1000===0?n/1000:(n/1000).toFixed(2))+" kg") : n+" g";
+}
+function money(v){return Number(v||0).toLocaleString("en-IN");}
+function formatDate(v){try{return new Date(v).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});}catch{return "";}}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+function js(v){return String(v).replace(/\\/g,"\\\\").replace(/'/g,"\\'");}
 
-function esc(v) {
-  return String(v ?? "").replace(
-    /[&<>"']/g,
-    c => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    }[c])
-  );
-}
-
-if (token) {
-  loginBox(false);
-  loadOrders();
-}
+if(token){loginBox(false);loadOrders();}
 </script>
 </body>
 </html>
