@@ -1,19 +1,13 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FreshJaipur Orders</title><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/shop.css">
-</head><body><main class="shop-page"><section class="container">
-<div class="shop-heading"><span class="section-label">FreshJaipur</span><h1>Order Dashboard</h1><p>Orders saved on this browser for testing.</p></div>
-<div id="orders"></div>
-</section></main>
-<script>
-const orders=JSON.parse(localStorage.getItem("freshjaipur_orders")||"[]").reverse();
-const root=document.getElementById("orders");
-if(!orders.length){root.innerHTML='<div class="shop-card empty-cart"><h2>No orders yet</h2><p>Place a test order first.</p></div>';}
-else root.innerHTML=orders.map(o=>`<div class="shop-card order-details-box" style="margin-bottom:18px">
-<h2>${o.id}</h2><p><strong>${o.customer.name}</strong> · ${o.customer.phone}</p>
-<p>${o.customer.address}, ${o.customer.city} - ${o.customer.pincode}</p>
-<p>${o.items.map(i=>`${i.name} (${i.grams>=1000?i.grams/1000+' kg':i.grams+' g'}) × ${i.quantity}`).join("<br>")}</p>
-<p><strong>Total: ₹${o.total}</strong></p>
-${o.location.googleMapsUrl?`<p><a href="${o.location.googleMapsUrl}" target="_blank">📍 Open delivery location in Google Maps</a></p>`:""}
-</div>`).join("");
-</script></body></html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreshJaipur Admin</title>
+<meta http-equiv="refresh" content="0; url=https://freshjaipur-api.onrender.com/admin/">
+</head>
+<body>
+<p>Opening FreshJaipur Admin…</p>
+<p><a href="https://freshjaipur-api.onrender.com/admin/">Open Admin Dashboard</a></p>
+</body>
+</html>
