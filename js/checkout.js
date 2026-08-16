@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", initCheckout);
 document.addEventListener("freshjaipur:componentsLoaded", initCheckout);
 
@@ -32,9 +31,12 @@ function renderCheckoutItems(cart) {
     const html = cart.map(item => {
         subtotal += item.price * item.quantity;
         return `
-            <div class="summary-row">
-                <span>${escapeCheckout(item.name)} × ${item.quantity}</span>
-                <strong>₹${item.price * item.quantity}</strong>
+            <div class="checkout-product-summary">
+                <div class="summary-row">
+                    <span>${escapeCheckout(item.name)} × ${item.quantity}<small>${escapeCheckout(formatCheckoutWeight(item.grams))}</small></span>
+                    <strong>₹${item.price * item.quantity}</strong>
+                </div>
+                ${item.note ? `<div class="checkout-item-note"><i class="fa-regular fa-note-sticky"></i> ${escapeCheckout(item.note)}</div>` : ""}
             </div>
         `;
     }).join("");
@@ -148,10 +150,19 @@ async function placeOrder(event) {
                 ? `https://www.google.com/maps?q=${latitude},${longitude}`
                 : ""
         },
-        items: cart,
+        items: cart.map(item => ({
+            ...item,
+            note: String(item.note || "").slice(0,300)
+        })),
         subtotal,
         total: subtotal
     };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Placing Order...';
+    }
 
     try {
         const apiUrl = window.FRESHJAIPUR_API_URL || "https://freshjaipur-api.onrender.com/api";
@@ -181,12 +192,23 @@ async function placeOrder(event) {
         window.location.href = "/order-success/";
     } catch (error) {
         console.error(error);
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fa-solid fa-check"></i> Place Order';
+        }
         alert("Order receive nahi ho paya. Please check backend connection and try again.");
     }
 }
 
+function formatCheckoutWeight(g) {
+    const n = Number(g) || 0;
+    if (n >= 1000 && n % 1000 === 0) return `${n / 1000} kg`;
+    if (n >= 1000) return `${(n / 1000).toFixed(2).replace(/\.00$/, "")} kg`;
+    return `${n} g`;
+}
+
 function escapeCheckout(value) {
-    return String(value).replace(/[&<>"']/g, char => ({
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
         "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[char]));
 }
