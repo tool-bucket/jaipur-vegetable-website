@@ -24,18 +24,19 @@ function renderCartPage() {
           <div class="cart-item-image"><img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy"></div>
           <div class="cart-item-main">
             <h3>${esc(item.name)}</h3>
-            <div class="cart-item-meta">${esc(item.category)} · ${formatWeight(item.grams)} · ₹${item.price} / pack</div>
-            <div class="cart-item-price">₹${item.price} per ${formatWeight(item.grams)}</div>
+            <div class="cart-item-meta">${esc(item.category)} · ${item.unit === "mala" ? `${item.quantity} mala` : `${formatWeight(item.grams)} per pack`}</div>
+            <div class="cart-item-price">${item.unit === "mala" ? `₹${item.price} per mala · Bulk order` : `₹${item.price} per ${formatWeight(item.grams)}`}</div>
             <div class="quantity-control">
               <button type="button" aria-label="Decrease quantity" onclick="changeCartQty('${js(item.id)}',-1)">−</button>
               <span>${item.quantity}</span>
               <button type="button" aria-label="Increase quantity" onclick="changeCartQty('${js(item.id)}',1)">+</button>
             </div>
+            ${item.unit === "mala" ? `<div class="bulk-cart-hint"><i class="fa-solid fa-boxes-stacked"></i> Bulk order · Minimum ${item.minQuantity || 1} malas</div>` : ""}
             <label class="cart-note-label" for="note-${cssId(item.id)}">
               <i class="fa-regular fa-note-sticky"></i> Special instruction for this product
             </label>
             <textarea id="note-${cssId(item.id)}" class="cart-item-note"
-              maxlength="300" 
+              maxlength="300" placeholder="Example: Tamatar chote aur pakke hue chahiye..."
               onchange="updateCartNote('${js(item.id)}', this.value)">${esc(note)}</textarea>
             <div class="cart-note-help">Optional · Up to 300 characters</div>
           </div>
@@ -72,7 +73,13 @@ function renderCartPage() {
 }
 function changeCartQty(id,amount){
     const cart=getCart(), item=cart.find(x=>x.id===id); if(!item)return;
-    item.quantity+=amount;
+    const minimum = item.unit === "mala" ? Number(item.minQuantity || 1) : 1;
+    const next = item.quantity + amount;
+    if (item.unit === "mala" && next > 0 && next < minimum) {
+        alert(`Minimum ${minimum} malas ka bulk order hai.`);
+        return;
+    }
+    item.quantity = next;
     if(item.quantity<=0) saveCart(cart.filter(x=>x.id!==id)); else saveCart(cart);
     renderCartPage();
 }
