@@ -1,6 +1,6 @@
 /* =========================================================
    FRESHJAIPUR - CART
-   Supports preset weights + custom quantities above 1kg.
+   Supports vegetable weights + bulk mala quantities.
 ========================================================= */
 const CART_KEY = "freshjaipur_cart";
 
@@ -17,9 +17,16 @@ function getMoney(value) {
 }
 function formatWeight(grams) {
     const g = Number(grams) || 0;
+    if (!g) return "";
     if (g >= 1000 && g % 1000 === 0) return `${g / 1000} kg`;
     if (g >= 1000) return `${(g / 1000).toFixed(2).replace(/\.00$/, "")} kg`;
     return `${g} g`;
+}
+function formatItemUnit(item) {
+    if (item.unit === "mala") {
+        return `${Number(item.quantity || 0)} mala`;
+    }
+    return formatWeight(item.grams);
 }
 function getCartCount() {
     return getCart().reduce((n, item) => n + Number(item.quantity || 0), 0);
@@ -37,20 +44,20 @@ function productFromCard(card) {
     const price = getMoney(priceText);
     const category = card.querySelector(".product-category")?.textContent.trim() || "Fresh Produce";
     const image = card.querySelector("img")?.getAttribute("src") || "";
-    return {
-        id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-        name, pricePerKg: price, category, image
-    };
+    const unit = card.dataset.unit || "kg";
+    const minQuantity = Number(card.dataset.minQuantity || 1);
+    const productId = card.dataset.productId || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return { id: productId, name, pricePerKg: price, category, image, unit, minQuantity };
 }
-function showAddCelebration(product, weight) {
+function showAddCelebration(product, amountLabel) {
     const overlay = document.createElement("div");
     overlay.className = "add-celebration";
     overlay.innerHTML = `
         <div class="celebration-glow"></div>
         <div class="celebration-content">
             <div class="celebration-emoji">🎉</div>
-            <div class="celebration-title">Urrreee! 🥳</div>
-            <div class="celebration-text">${escapeCart(product.name)} (${formatWeight(weight)}) cart mein add ho gaya!</div>
+            <div class="celebration-title">Added to cart! 🥳</div>
+            <div class="celebration-text">${escapeCart(product.name)} (${escapeCart(amountLabel)}) cart mein add ho gaya!</div>
             <a href="/cart/" class="celebration-cart-link">View Cart <i class="fa-solid fa-arrow-right"></i></a>
         </div>`;
     for (let i=0;i<22;i++) {
@@ -82,17 +89,44 @@ function addToCart(product, grams) {
         cart.push({
             id, productId:product.id, name:product.name, price,
             pricePerKg:product.pricePerKg, grams, category:product.category,
-            image:product.image, quantity:1, note:""
+            image:product.image, quantity:1, note:"", unit:"kg", minQuantity:1
         });
     }
     saveCart(cart);
-    showAddCelebration(product, grams);
+    showAddCelebration(product, formatWeight(grams));
+}
+function addBulkMalaToCart(product, quantity) {
+    quantity = Number(quantity);
+    const min = Number(product.minQuantity || 1);
+    if (!Number.isInteger(quantity) || quantity < min) {
+        alert(`${product.name} ke liye minimum ${min} mala ka bulk order hai.`);
+        return false;
+    }
+    if (quantity > 50000) {
+        alert("Please contact us directly for very large bulk orders.");
+        return false;
+    }
+    const cart=getCart();
+    const id=`${product.id}-bulk`;
+    const existing=cart.find(x=>x.id===id);
+    if(existing) {
+        existing.quantity += quantity;
+    } else {
+        cart.push({
+            id, productId:product.id, name:product.name,
+            price:product.pricePerKg, pricePerUnit:product.pricePerKg,
+            category:product.category, image:product.image,
+            quantity, note:"", unit:"mala", minQuantity:min, grams:0
+        });
+    }
+    saveCart(cart);
+    showAddCelebration(product, `${quantity} mala`);
+    return true;
 }
 function getSelectedGrams(card) {
     const select = card.querySelector(".weight-select");
     if (!select) return 1000;
     if (select.value !== "custom") return Number(select.value);
-
     const custom = card.querySelector(".custom-weight-input");
     const kg = Number(custom?.value);
     if (!Number.isFinite(kg) || kg < 0.25) {
@@ -108,6 +142,17 @@ function getSelectedGrams(card) {
     }
     return grams;
 }
+function getBulkQuantity(card) {
+    const input = card.querySelector(".bulk-quantity-input");
+    const quantity = Number(input?.value);
+    const min = Number(card.dataset.minQuantity || 1);
+    if (!Number.isInteger(quantity) || quantity < min) {
+        alert(`Minimum ${min} mala ka bulk order hai.`);
+        input?.focus();
+        return null;
+    }
+    return quantity;
+}
 function initAddToCartButtons() {
     document.querySelectorAll(".product-card .add-cart-btn").forEach(button=>{
         if(button.dataset.cartReady==="true") return;
@@ -117,6 +162,17 @@ function initAddToCartButtons() {
             const card=button.closest(".product-card");
             if(!card) return;
             const product=productFromCard(card);
+            if (product.unit === "mala") {
+                const quantity = getBulkQuantity(card);
+                if (!quantity) return;
+                if (addBulkMalaToCart(product, quantity)) {
+                    const old=button.innerHTML;
+                    button.classList.add("added");
+                    button.innerHTML='<i class="fa-solid fa-check"></i> Added';
+                    setTimeout(()=>{button.classList.remove("added");button.innerHTML=old;},900);
+                }
+                return;
+            }
             const grams=getSelectedGrams(card);
             if (!grams) return;
             addToCart(product, grams);
@@ -129,11 +185,11 @@ function initAddToCartButtons() {
 }
 function addWeightSelectors() {
     document.querySelectorAll(".product-card").forEach(card=>{
+        if(card.classList.contains("bulk-product")) return;
         if(card.querySelector(".weight-select")) return;
         const priceEl=card.querySelector(".product-price");
         const addBtn=card.querySelector(".add-cart-btn");
         if(!priceEl || !addBtn) return;
-
         const wrap=document.createElement("div");
         wrap.className="weight-picker";
         wrap.innerHTML=`<label>Quantity</label>
