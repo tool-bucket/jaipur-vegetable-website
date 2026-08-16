@@ -1,0 +1,47 @@
+/* =========================================================
+   FRESHJAIPUR - BULK MALA SECTION
+========================================================= */
+.mala-hero{padding:78px 0 58px;background:linear-gradient(135deg,#f2fbf6 0%,#fffaf3 100%);border-bottom:1px solid #e6eee9}
+.mala-hero-inner{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.65fr);gap:38px;align-items:center}
+.mala-hero-copy .section-label,.mala-catalog-heading .section-label{display:inline-flex;align-items:center;gap:8px;color:#198754;background:#eaf8f0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700}
+.mala-hero h1{font-size:clamp(36px,5vw,62px);line-height:1.08;color:#17231d;margin:18px 0 16px;max-width:780px}
+.mala-hero h1 span{display:block;color:#198754}
+.mala-hero-copy p{max-width:720px;color:#64716a;font-size:16px;line-height:1.8}
+.mala-trust-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.mala-trust-row span{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid #dceae1;border-radius:12px;background:#fff;color:#426052;font-size:12px;font-weight:700}
+.mala-trust-row i{color:#198754}
+.mala-hero-card{background:#fff;border:1px solid #e2ece5;border-radius:24px;padding:30px;box-shadow:0 18px 50px rgba(23,35,29,.08)}
+.mala-hero-icon{width:58px;height:58px;border-radius:18px;background:#eaf8f0;color:#198754;display:flex;align-items:center;justify-content:center;font-size:25px;margin-bottom:18px}
+.mala-hero-card strong{display:block;color:#17231d;font-size:21px;margin-bottom:8px}
+.mala-hero-card p{color:#6d7973;line-height:1.7;margin-bottom:20px}
+.mala-products-section{padding-top:70px}
+.mala-catalog-heading{text-align:center;max-width:760px;margin:0 auto 28px}
+.mala-catalog-heading h2{font-size:clamp(30px,4vw,44px);color:#17231d;margin:14px 0 8px}
+.mala-catalog-heading p{color:#6d7973}
+.mala-notice{max-width:980px;margin:0 auto 28px;padding:16px 18px;border-radius:16px;background:#fff8e7;border:1px solid #f1e2b9;display:flex;gap:12px;align-items:flex-start;color:#725b28}
+.mala-notice>i{margin-top:3px;color:#c48b21}
+.mala-notice strong,.mala-notice span{display:block}
+.mala-notice strong{margin-bottom:3px}
+.mala-notice span{font-size:12px;line-height:1.6}
+.mala-grid{align-items:stretch}
+.mala-grid .product-card{display:flex;flex-direction:column}
+.mala-grid .product-content{display:flex;flex-direction:column;flex:1}
+.mala-image-area{background:linear-gradient(145deg,#f2fbf6,#fff9f1)}
+.bulk-min-badge{display:inline-flex;align-items:center;gap:7px;width:max-content;max-width:100%;padding:7px 10px;border-radius:999px;background:#eef8f3;color:#198754;font-size:11px;font-weight:800;margin:4px 0 12px}
+.bulk-quantity-wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:12px;border-top:1px solid #edf1ee}
+.bulk-quantity-wrap label{font-size:12px;font-weight:700;color:#65716b}
+.bulk-quantity-input{width:110px;padding:9px 10px;border:1px solid #dce6df;border-radius:10px;background:#fff;color:#17231d;font:inherit;font-weight:700}
+.bulk-quantity-input:focus{outline:2px solid rgba(25,135,84,.15);border-color:#198754}
+.mala-grid .product-bottom{margin-top:auto}
+.mala-price-note{text-align:center;color:#8a948f;font-size:11px;max-width:760px;margin:20px auto 0;line-height:1.6}
+.mala-how-section{padding:85px 0;background:#f7faf8;margin-top:70px}
+.mala-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.mala-step{position:relative;background:#fff;border:1px solid #e4ece7;border-radius:20px;padding:25px;box-shadow:0 12px 35px rgba(23,35,29,.05)}
+.mala-step>span{position:absolute;right:18px;top:15px;font-size:12px;font-weight:800;color:#b5c5bd}
+.mala-step>i{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#eaf8f0;color:#198754;font-size:18px;margin-bottom:16px}
+.mala-step h3{color:#17231d;font-size:17px;margin-bottom:7px}
+.mala-step p{color:#718078;font-size:13px;line-height:1.7;margin:0}
+.bulk-cart-hint{font-size:11px;color:#198754;font-weight:700;margin-top:8px}
+.empty-cart-actions{display:flex;flex-direction:column;align-items:center}
+@media(max-width:900px){.mala-hero-inner{grid-template-columns:1fr}.mala-steps{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.mala-hero{padding:52px 0 40px}.mala-hero h1{font-size:38px}.mala-trust-row{display:grid}.mala-trust-row span{justify-content:center}.mala-steps{grid-template-columns:1fr}.mala-notice{font-size:12px}.bulk-quantity-wrap{align-items:stretch;flex-direction:column}.bulk-quantity-input{width:100%}}
