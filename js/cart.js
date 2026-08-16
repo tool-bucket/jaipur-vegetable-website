@@ -1,214 +1,170 @@
-document.addEventListener("DOMContentLoaded", initCheckout);
-document.addEventListener("freshjaipur:componentsLoaded", initCheckout);
+/* =========================================================
+   FRESHJAIPUR - CART
+   Supports preset weights + custom quantities above 1kg.
+========================================================= */
+const CART_KEY = "freshjaipur_cart";
 
-let checkoutReady = false;
-
-function initCheckout() {
-    if (checkoutReady) return;
-
-    const form = document.getElementById("checkoutForm");
-    if (!form) return;
-
-    checkoutReady = true;
-
-    const cart = getCart();
-
-    if (!cart.length) {
-        window.location.href = "/cart/";
-        return;
-    }
-
-    renderCheckoutItems(cart);
-
-    document.getElementById("useLocation")?.addEventListener("click", useCurrentLocation);
-    document.getElementById("addressOnMap")?.addEventListener("click", findAddressOnMap);
-    form.addEventListener("submit", placeOrder);
+function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
+    catch { return []; }
 }
-
-function renderCheckoutItems(cart) {
-    let subtotal = 0;
-
-    const html = cart.map(item => {
-        subtotal += item.price * item.quantity;
-        return `
-            <div class="checkout-product-summary">
-                <div class="summary-row">
-                    <span>${escapeCheckout(item.name)} × ${item.quantity}<small>${escapeCheckout(formatCheckoutWeight(item.grams))}</small></span>
-                    <strong>₹${item.price * item.quantity}</strong>
-                </div>
-                ${item.note ? `<div class="checkout-item-note"><i class="fa-regular fa-note-sticky"></i> ${escapeCheckout(item.note)}</div>` : ""}
-            </div>
-        `;
-    }).join("");
-
-    document.getElementById("checkoutItems").innerHTML = html;
-    document.getElementById("checkoutSubtotal").textContent = `₹${subtotal}`;
-    document.getElementById("checkoutTotal").textContent = `₹${subtotal}`;
+function saveCart(cart) {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    updateCartCount();
 }
-
-function useCurrentLocation() {
-    const status = document.getElementById("locationStatus");
-
-    if (!navigator.geolocation) {
-        status.textContent = "Your browser does not support location access. Please use Find Address on Map.";
-        return;
-    }
-
-    status.textContent = "Getting your current location…";
-
-    navigator.geolocation.getCurrentPosition(
-        position => {
-            setMapLocation(position.coords.latitude, position.coords.longitude, "Current location selected.");
-        },
-        error => {
-            status.textContent = "Location access was not allowed. Please enable location permission and try again.";
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+function getMoney(value) {
+    return Number(String(value).replace(/[^\d.]/g, "")) || 0;
 }
-
-function findAddressOnMap() {
-    const address = [
-        document.getElementById("address")?.value,
-        document.getElementById("landmark")?.value,
-        document.getElementById("pincode")?.value,
-        document.getElementById("city")?.value
-    ].filter(Boolean).join(", ");
-
-    if (!address) {
-        document.getElementById("address")?.focus();
-        document.getElementById("locationStatus").textContent = "Please enter your address first.";
-        return;
-    }
-
-    const encoded = encodeURIComponent(address);
-    document.getElementById("googleMapFrame").src =
-        `https://www.google.com/maps?q=${encoded}&output=embed`;
-
-    document.getElementById("locationStatus").textContent =
-        "Address loaded on Google Maps. For an exact delivery pin, use 'Use My Current Location'.";
+function formatWeight(grams) {
+    const g = Number(grams) || 0;
+    if (g >= 1000 && g % 1000 === 0) return `${g / 1000} kg`;
+    if (g >= 1000) return `${(g / 1000).toFixed(2).replace(/\.00$/, "")} kg`;
+    return `${g} g`;
 }
-
-function setMapLocation(lat, lng, message) {
-    document.getElementById("latitude").value = lat;
-    document.getElementById("longitude").value = lng;
-
-    document.getElementById("googleMapFrame").src =
-        `https://www.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
-
-    document.getElementById("locationStatus").innerHTML =
-        `${message} <strong>Lat:</strong> ${Number(lat).toFixed(6)} · <strong>Lng:</strong> ${Number(lng).toFixed(6)} · <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Open in Google Maps</a>`;
+function getCartCount() {
+    return getCart().reduce((n, item) => n + Number(item.quantity || 0), 0);
 }
-
-async function placeOrder(event) {
-    event.preventDefault();
-
-    const cart = getCart();
-    if (!cart.length) {
-        window.location.href = "/cart/";
-        return;
-    }
-
-    const form = event.currentTarget;
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    if (subtotal < 200) {
-        alert("FreshJaipur ka minimum order ₹200 hai. Kripya cart mein aur products add karein.");
-        window.location.href = "/cart/";
-        return;
-    }
-
-    const latitude = document.getElementById("latitude").value;
-    const longitude = document.getElementById("longitude").value;
-
-    if (!latitude || !longitude) {
-        const okay = confirm("Exact map location select nahi hui hai. Kya aap phir bhi order place karna chahte hain?");
-        if (!okay) return;
-    }
-
-    const data = new FormData(form);
-    const order = {
-        id: "FJ-" + Date.now().toString().slice(-8),
-        createdAt: new Date().toISOString(),
-        customer: {
-            name: data.get("customerName"),
-            phone: data.get("phone"),
-            address: data.get("address"),
-            landmark: data.get("landmark"),
-            pincode: data.get("pincode"),
-            city: data.get("city"),
-            notes: data.get("notes")
-        },
-        location: {
-            latitude: latitude || null,
-            longitude: longitude || null,
-            googleMapsUrl: latitude && longitude
-                ? `https://www.google.com/maps?q=${latitude},${longitude}`
-                : ""
-        },
-        items: cart.map(item => ({
-            ...item,
-            note: String(item.note || "").slice(0,300)
-        })),
-        subtotal,
-        total: subtotal
+function updateCartCount() {
+    const count = getCartCount();
+    document.querySelectorAll(".cart-count").forEach(el => {
+        el.textContent = count;
+        el.classList.toggle("has-items", count > 0);
+    });
+}
+function productFromCard(card) {
+    const name = card.querySelector("h3")?.textContent.trim() || "Fresh Product";
+    const priceText = card.querySelector(".product-price strong")?.textContent || "0";
+    const price = getMoney(priceText);
+    const category = card.querySelector(".product-category")?.textContent.trim() || "Fresh Produce";
+    const image = card.querySelector("img")?.getAttribute("src") || "";
+    return {
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        name, pricePerKg: price, category, image
     };
-
-    const submitButton = form.querySelector('button[type="submit"]');
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Placing Order...';
+}
+function showAddCelebration(product, weight) {
+    const overlay = document.createElement("div");
+    overlay.className = "add-celebration";
+    overlay.innerHTML = `
+        <div class="celebration-glow"></div>
+        <div class="celebration-content">
+            <div class="celebration-emoji">🎉</div>
+            <div class="celebration-title">Urrreee! 🥳</div>
+            <div class="celebration-text">${escapeCart(product.name)} (${formatWeight(weight)}) cart mein add ho gaya!</div>
+            <a href="/cart/" class="celebration-cart-link">View Cart <i class="fa-solid fa-arrow-right"></i></a>
+        </div>`;
+    for (let i=0;i<22;i++) {
+        const piece=document.createElement("span");
+        piece.className="confetti-piece";
+        piece.style.setProperty("--x",`${Math.random()*100-50}vw`);
+        piece.style.setProperty("--r",`${Math.random()*720-360}deg`);
+        piece.style.setProperty("--delay",`${Math.random()*.12}s`);
+        overlay.appendChild(piece);
     }
-
-    try {
-        const apiUrl = window.FRESHJAIPUR_API_URL || "https://freshjaipur-api.onrender.com/api";
-
-        const response = await fetch(`${apiUrl}/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                customer: order.customer,
-                location: order.location,
-                items: order.items,
-                subtotal: order.subtotal,
-                total: order.total
-            })
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=>overlay.classList.add("show"));
+    setTimeout(()=>{ overlay.classList.remove("show"); setTimeout(()=>overlay.remove(),300); },1500);
+}
+function addToCart(product, grams) {
+    grams = Number(grams);
+    if (!Number.isFinite(grams) || grams < 250) {
+        alert("Minimum quantity 250 g hai.");
+        return;
+    }
+    const cart=getCart();
+    const id=`${product.id}-${grams}`;
+    const existing=cart.find(x=>x.id===id);
+    const price=Math.round(product.pricePerKg*(grams/1000)*100)/100;
+    if(existing) {
+        existing.quantity += 1;
+        if (typeof existing.note !== "string") existing.note = "";
+    } else {
+        cart.push({
+            id, productId:product.id, name:product.name, price,
+            pricePerKg:product.pricePerKg, grams, category:product.category,
+            image:product.image, quantity:1, note:""
         });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message || "Order could not be received.");
-        }
-
-        order.id = result.orderId;
-        localStorage.setItem("freshjaipur_last_order", JSON.stringify(order));
-        localStorage.removeItem(CART_KEY);
-
-        window.location.href = "/order-success/";
-    } catch (error) {
-        console.error(error);
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.innerHTML = '<i class="fa-solid fa-check"></i> Place Order';
-        }
-        alert("Order receive nahi ho paya. Please check backend connection and try again.");
     }
+    saveCart(cart);
+    showAddCelebration(product, grams);
 }
+function getSelectedGrams(card) {
+    const select = card.querySelector(".weight-select");
+    if (!select) return 1000;
+    if (select.value !== "custom") return Number(select.value);
 
-function formatCheckoutWeight(g) {
-    const n = Number(g) || 0;
-    if (n >= 1000 && n % 1000 === 0) return `${n / 1000} kg`;
-    if (n >= 1000) return `${(n / 1000).toFixed(2).replace(/\.00$/, "")} kg`;
-    return `${n} g`;
+    const custom = card.querySelector(".custom-weight-input");
+    const kg = Number(custom?.value);
+    if (!Number.isFinite(kg) || kg < 0.25) {
+        alert("Custom quantity kam se kam 0.25 kg honi chahiye.");
+        custom?.focus();
+        return null;
+    }
+    const grams = Math.round(kg * 1000);
+    if (grams % 250 !== 0) {
+        alert("Custom quantity 250 g ke steps mein dein, jaise 1.25 kg, 1.5 kg, 2 kg.");
+        custom?.focus();
+        return null;
+    }
+    return grams;
 }
+function initAddToCartButtons() {
+    document.querySelectorAll(".product-card .add-cart-btn").forEach(button=>{
+        if(button.dataset.cartReady==="true") return;
+        button.dataset.cartReady="true";
+        button.addEventListener("click", e=>{
+            e.preventDefault();
+            const card=button.closest(".product-card");
+            if(!card) return;
+            const product=productFromCard(card);
+            const grams=getSelectedGrams(card);
+            if (!grams) return;
+            addToCart(product, grams);
+            const old=button.innerHTML;
+            button.classList.add("added");
+            button.innerHTML='<i class="fa-solid fa-check"></i> Added';
+            setTimeout(()=>{button.classList.remove("added");button.innerHTML=old;},900);
+        });
+    });
+}
+function addWeightSelectors() {
+    document.querySelectorAll(".product-card").forEach(card=>{
+        if(card.querySelector(".weight-select")) return;
+        const priceEl=card.querySelector(".product-price");
+        const addBtn=card.querySelector(".add-cart-btn");
+        if(!priceEl || !addBtn) return;
 
-function escapeCheckout(value) {
-    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        const wrap=document.createElement("div");
+        wrap.className="weight-picker";
+        wrap.innerHTML=`<label>Quantity</label>
+            <select class="weight-select" aria-label="Choose quantity">
+              <option value="250">250 g (¼ kg)</option>
+              <option value="500">500 g (½ kg)</option>
+              <option value="1000" selected>1 kg</option>
+              <option value="2000">2 kg</option>
+              <option value="5000">5 kg</option>
+              <option value="custom">Custom</option>
+            </select>
+            <input class="custom-weight-input" type="number" min="0.25" step="0.25" placeholder="kg" aria-label="Custom quantity in kilograms" hidden>`;
+        const select=wrap.querySelector(".weight-select");
+        const custom=wrap.querySelector(".custom-weight-input");
+        select.addEventListener("change", ()=>{
+            const show=select.value==="custom";
+            custom.hidden=!show;
+            if(show) custom.focus();
+        });
+        addBtn.parentNode.insertBefore(wrap, addBtn);
+    });
+}
+function initCartFeatures() {
+    addWeightSelectors();
+    initAddToCartButtons();
+    updateCartCount();
+}
+function escapeCart(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({
         "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[char]));
+    }[c]));
 }
+document.addEventListener("DOMContentLoaded", initCartFeatures);
+document.addEventListener("freshjaipur:componentsLoaded", initCartFeatures);
