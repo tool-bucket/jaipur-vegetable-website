@@ -33,7 +33,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:16px}
 .actions select{min-width:180px}.delete-btn{background:#b94d4d}
-.empty{text-align:center;padding:45px}
+.empty{text-align:center;padding:45px}.price-list{display:grid;gap:10px;margin-top:15px}.price-row{display:grid;grid-template-columns:1.5fr 150px 180px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e1e9e3;border-radius:12px;background:#f8fbf9}.price-row strong{display:block}.price-row small{color:#718078}.price-row input{width:100%;background:#fff}.save-price{white-space:nowrap}@media(max-width:700px){.price-row{grid-template-columns:1fr 1fr}.save-price{grid-column:1/-1}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.wrap{margin-top:18px}}
 </style>
 </head>
@@ -77,6 +77,14 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <button class="secondary" onclick="clearFilters()">Clear Filters</button>
 </div>
 
+<div class="card product-manager">
+  <div class="top">
+    <div><h2 style="margin-bottom:5px">Mala Prices</h2><p class="muted">Change bulk mala prices and minimum order quantities from here. No code or GitHub update needed.</p></div>
+    <button class="secondary" onclick="loadMalaProducts()">↻ Refresh Prices</button>
+  </div>
+  <div id="malaProducts" class="price-list"><div class="muted">Loading mala products...</div></div>
+</div>
+
 <div id="orders"></div>
 </div>
 
@@ -100,6 +108,7 @@ function login() {
     token=x.token;
     localStorage.setItem("freshjaipur_admin_token",token);
     loginBox(false);
+    loadMalaProducts();
     loadOrders();
   })
   .catch(e=>document.getElementById("loginMsg").textContent=e.message);
@@ -115,6 +124,42 @@ function logout() {
   token="";
   allOrders=[];
   loginBox(true);
+}
+
+async function loadMalaProducts(){
+  const root=document.getElementById("malaProducts");
+  root.innerHTML='<div class="muted">Loading mala products...</div>';
+  try{
+    const r=await fetch(API+"/products/malas");
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.message||"Could not load mala products.");
+    root.innerHTML=data.map(p=>`<div class="price-row" data-product-id="${esc(p.productId)}">
+      <div><strong>${esc(p.name)}</strong><small>Minimum bulk order: ${p.minQuantity} malas</small></div>
+      <label><small>Price / mala</small><input class="price-input" type="number" min="0" step="0.01" value="${Number(p.price)}"></label>
+      <label><small>Minimum quantity</small><input class="min-input" type="number" min="1" step="1" value="${Number(p.minQuantity)}"></label>
+      <button class="save-price" onclick="saveMalaProduct('${js(p.productId)}',this)">Save</button>
+    </div>`).join("") || '<div class="muted">No mala products found.</div>';
+  }catch(e){root.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
+}
+
+async function saveMalaProduct(productId,button){
+  const row=button.closest('.price-row');
+  const price=Number(row.querySelector('.price-input').value);
+  const minQuantity=Number(row.querySelector('.min-input').value);
+  if(!Number.isFinite(price)||price<0){alert('Enter a valid price.');return;}
+  if(!Number.isInteger(minQuantity)||minQuantity<1){alert('Enter a valid minimum quantity.');return;}
+  const old=button.textContent; button.disabled=true; button.textContent='Saving...';
+  try{
+    const r=await fetch(API+"/admin/products/"+encodeURIComponent(productId),{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({price,minQuantity})});
+    const data=await r.json();
+    if(r.status===401){logout();return;}
+    if(!r.ok) throw new Error(data.message||'Could not save price.');
+    row.querySelector('.price-input').value=data.price;
+    row.querySelector('.min-input').value=data.minQuantity;
+    row.querySelector('small').textContent='Minimum bulk order: '+data.minQuantity+' malas';
+    button.textContent='✓ Saved';
+    setTimeout(()=>{button.textContent=old;button.disabled=false;},1200);
+  }catch(e){button.disabled=false;button.textContent=old;alert(e.message);}
 }
 
 async function loadOrders() {
@@ -165,7 +210,7 @@ function orderCard(o) {
   const statusOptions=["new","confirmed","out-for-delivery","delivered","cancelled"];
   const items=(o.items||[]).map(i=>`
     <div class="item-row">
-      <strong>${esc(i.name)}</strong> — ${weight(i.grams)} × ${i.quantity} = ₹${money(i.price*i.quantity)}
+      <strong>${esc(i.name)}</strong> — ${i.unit === "mala" ? `${i.quantity} malas × ₹${money(i.price)} = ₹${money(i.price*i.quantity)}` : `${weight(i.grams)} × ${i.quantity} = ₹${money(i.price*i.quantity)}`}
       ${i.note?`<div class="note"><b>Product instruction:</b> ${esc(i.note)}</div>`:""}
     </div>
   `).join("");
@@ -188,6 +233,7 @@ function orderCard(o) {
     <p>${esc(o.customer?.address)}, ${esc(o.customer?.city)} - ${esc(o.customer?.pincode)}${o.customer?.landmark?` · ${esc(o.customer.landmark)}`:""}</p>
 
     ${o.customer?.notes?`<div class="customer-note"><b>Delivery instruction:</b> ${esc(o.customer.notes)}</div>`:""}
+    ${o.functionDetails?.type || o.functionDetails?.date || o.functionDetails?.requirements ? `<div class="customer-note"><b>Bulk function details:</b> ${o.functionDetails?.type?`Event: ${esc(o.functionDetails.type)} · `:""}${o.functionDetails?.date?`Required: ${esc(o.functionDetails.date)}`:""}${o.functionDetails?.requirements?`<br>${esc(o.functionDetails.requirements)}`:""}</div>` : ""}
 
     <div class="items">${items}</div>
 
@@ -258,7 +304,8 @@ function formatDate(v){try{return new Date(v).toLocaleString("en-IN",{dateStyle:
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function js(v){return String(v).replace(/\\/g,"\\\\").replace(/'/g,"\\'");}
 
-if(token){loginBox(false);loadOrders();}
+if(token){loginBox(false);loadMalaProducts();loadOrders();}
 </script>
 </body>
 </html>
+
