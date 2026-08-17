@@ -3,6 +3,8 @@
    Supports vegetable weights + bulk mala quantities.
 ========================================================= */
 const CART_KEY = "freshjaipur_cart";
+const PRICE_API = window.FRESHJAIPUR_API_URL || (location.origin + "/api");
+let FRESHJAIPUR_VEGETABLE_PRICES = new Map();
 
 function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
@@ -40,14 +42,42 @@ function updateCartCount() {
 }
 function productFromCard(card) {
     const name = card.querySelector("h3")?.textContent.trim() || "Fresh Product";
-    const priceText = card.querySelector(".product-price strong")?.textContent || "0";
-    const price = getMoney(priceText);
     const category = card.querySelector(".product-category")?.textContent.trim() || "Fresh Produce";
     const image = card.querySelector("img")?.getAttribute("src") || "";
     const unit = card.dataset.unit || "kg";
-    const minQuantity = Number(card.dataset.minQuantity || 1);
     const productId = card.dataset.productId || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const liveProduct = unit === "kg" ? FRESHJAIPUR_VEGETABLE_PRICES.get(productId) : null;
+    const priceText = card.querySelector(".product-price strong")?.textContent || "0";
+    const price = liveProduct ? Number(liveProduct.price) : getMoney(priceText);
+    const minQuantity = liveProduct ? Number(liveProduct.minQuantity || 250) : Number(card.dataset.minQuantity || 1);
     return { id: productId, name, pricePerKg: price, category, image, unit, minQuantity };
+}
+
+async function syncVegetablePrices() {
+    try {
+        const response = await fetch(PRICE_API + "/products/vegetables", { cache: "no-store" });
+        if (!response.ok) return;
+        const products = await response.json();
+        FRESHJAIPUR_VEGETABLE_PRICES = new Map(
+            (Array.isArray(products) ? products : []).map(product => [product.productId, product])
+        );
+
+        document.querySelectorAll(".product-card").forEach(card => {
+            if (card.classList.contains("bulk-product")) return;
+            const name = card.querySelector("h3")?.textContent.trim();
+            if (!name) return;
+            const productId = card.dataset.productId || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            const product = FRESHJAIPUR_VEGETABLE_PRICES.get(productId);
+            if (!product) return;
+            card.dataset.productId = product.productId;
+            card.dataset.unit = product.unit;
+            card.dataset.minQuantity = product.minQuantity;
+            const priceEl = card.querySelector(".product-price strong");
+            if (priceEl) priceEl.textContent = `₹${Number(product.price).toLocaleString("en-IN")}`;
+        });
+    } catch (error) {
+        console.warn("FreshJaipur live vegetable prices unavailable; using page prices.", error);
+    }
 }
 function showAddCelebration(product, amountLabel) {
     const overlay = document.createElement("div");
@@ -212,7 +242,8 @@ function addWeightSelectors() {
         addBtn.parentNode.insertBefore(wrap, addBtn);
     });
 }
-function initCartFeatures() {
+async function initCartFeatures() {
+    await syncVegetablePrices();
     addWeightSelectors();
     initAddToCartButtons();
     updateCartCount();
