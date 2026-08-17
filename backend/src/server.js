@@ -46,8 +46,54 @@ const DEFAULT_MALA_PRODUCTS = [
   { productId: "rukhadi-mala", name: "Rukhadi", category: "Rukhadi", unit: "mala", price: 20, minQuantity: 50, image: "/assets/Rukhadi Mala.svg" }
 ];
 
-async function seedMalaProducts() {
-  for (const product of DEFAULT_MALA_PRODUCTS) {
+const DEFAULT_VEGETABLE_PRODUCTS = [
+  { productId: 'fresh-tomato', name: 'Fresh Tomato', category: 'Daily Use', unit: "kg", price: 40, minQuantity: 250, image: '/assets/Fresh Tomato online in Jaipur.jpg' },
+  { productId: 'fresh-onion', name: 'Fresh Onion', category: 'Daily Use', unit: "kg", price: 32, minQuantity: 250, image: '/assets/Fresh Onion online in Jaipur.jpg' },
+  { productId: 'fresh-cucumber', name: 'Fresh Cucumber', category: 'Daily Use', unit: "kg", price: 45, minQuantity: 250, image: '/assets/Fresh Cucumber online in Jaipur.jpg' },
+  { productId: 'fresh-garlic', name: 'Fresh Garlic', category: 'Daily Use', unit: "kg", price: 120, minQuantity: 250, image: '/assets/Fresh Garlic online in Jaipur.jpg' },
+  { productId: 'fresh-green-chili', name: 'Fresh Green Chili', category: 'Daily Use', unit: "kg", price: 80, minQuantity: 250, image: '/assets/Fresh Green Chili online in Jaipur.jpg' },
+  { productId: 'fresh-green-capsicum', name: 'Fresh Green Capsicum', category: 'Daily Use', unit: "kg", price: 70, minQuantity: 250, image: '/assets/Fresh Green Capsicum online in Jaipur.jpg' },
+  { productId: 'fresh-ginger', name: 'Fresh Ginger', category: 'Daily Use', unit: "kg", price: 140, minQuantity: 250, image: '/assets/Fresh Ginger online in Jaipur.jpg' },
+  { productId: 'fresh-okra', name: 'Fresh Okra', category: 'Daily Use', unit: "kg", price: 55, minQuantity: 250, image: '/assets/Fresh Okra online in Jaipur.jpg' },
+  { productId: 'fresh-coriander', name: 'Fresh Coriander', category: 'Daily Use', unit: "kg", price: 25, minQuantity: 250, image: '/assets/Fresh Coriander online in Jaipur.jpg' },
+  { productId: 'fresh-mint', name: 'Fresh Mint', category: 'Daily Use', unit: "kg", price: 20, minQuantity: 250, image: '/assets/Fresh Mint online in Jaipur.jpg' },
+  { productId: 'fresh-spring-onion', name: 'Fresh Spring Onion', category: 'Daily Use', unit: "kg", price: 35, minQuantity: 250, image: '/assets/Fresh Spring Onion online in Jaipur.jpg' },
+  { productId: 'fresh-celery', name: 'Fresh Celery', category: 'Daily Use', unit: "kg", price: 90, minQuantity: 250, image: '/assets/Fresh Celery online in Jaipur.jpg' },
+  { productId: 'fresh-lemon', name: 'Fresh Lemon', category: 'Daily Use', unit: "kg", price: 90, minQuantity: 250, image: '/assets/Fresh Lemon online in Jaipur.jpg' },
+  { productId: 'fresh-desi-cucumber', name: 'Fresh desi cucumber', category: 'Daily Use', unit: "kg", price: 90, minQuantity: 250, image: '/assets/Fresh desi cucumber online in Jaipur.jpg' },
+  { productId: 'fresh-potato', name: 'Fresh Potato', category: 'Root Vegetables', unit: "kg", price: 35, minQuantity: 250, image: '/assets/Fresh Potato online in Jaipur.jpg' },
+  { productId: 'fresh-carrot', name: 'Fresh Carrot', category: 'Root Vegetables', unit: "kg", price: 50, minQuantity: 250, image: '/assets/Fresh Carrot online in Jaipur.jpg' },
+  { productId: 'fresh-beetroot', name: 'Fresh Beetroot', category: 'Root Vegetables', unit: "kg", price: 60, minQuantity: 250, image: '/assets/Fresh Beetroot online in Jaipur.jpg' },
+  { productId: 'fresh-radish', name: 'Fresh Radish', category: 'Root Vegetables', unit: "kg", price: 35, minQuantity: 250, image: '/assets/Fresh Radish online in Jaipur.jpg' },
+  { productId: 'fresh-sweet-potato', name: 'Fresh Sweet Potato', category: 'Root Vegetables', unit: "kg", price: 55, minQuantity: 250, image: '/assets/Fresh Sweet Potato online in Jaipur.jpg' },
+  { productId: 'fresh-spinach', name: 'Fresh Spinach', category: 'Leafy Vegetables', unit: "kg", price: 30, minQuantity: 250, image: '/assets/Fresh Spinach online in Jaipur.jpg' },
+  { productId: 'fresh-cabbage', name: 'Fresh Cabbage', category: 'Leafy Vegetables', unit: "kg", price: 40, minQuantity: 250, image: '/assets/Fresh Cabbage online in Jaipur.jpg' },
+  { productId: 'fresh-kale', name: 'Fresh Kale', category: 'Leafy Vegetables', unit: "kg", price: 90, minQuantity: 250, image: '/assets/Fresh Kale online in Jaipur.jpg' },
+  { productId: 'fresh-bok-choy', name: 'Fresh Bok Choy', category: 'Leafy Vegetables', unit: "kg", price: 75, minQuantity: 250, image: '/assets/Fresh Bok Choy online in Jaipur.jpg' },
+  { productId: 'fresh-parsley', name: 'Fresh Parsley', category: 'Leafy Vegetables', unit: "kg", price: 45, minQuantity: 250, image: '/assets/Fresh Parsley online in Jaipur.jpg' },
+  { productId: 'fresh-mint-leaves', name: 'Fresh Mint Leaves', category: 'Leafy Vegetables', unit: "kg", price: 20, minQuantity: 250, image: '/assets/Fresh Mint online in Jaipur.jpg' },
+  { productId: 'fresh-coriander-leaves', name: 'Fresh Coriander Leaves', category: 'Leafy Vegetables', unit: "kg", price: 25, minQuantity: 250, image: '/assets/Fresh Coriander online in Jaipur.jpg' },
+  { productId: 'fresh-leek', name: 'Fresh Leek', category: 'Leafy Vegetables', unit: "kg", price: 80, minQuantity: 250, image: '/assets/Fresh Leek online in Jaipur.jpg' },
+  { productId: 'fresh-methi-leaves', name: 'Fresh Methi Leaves', category: 'Leafy Vegetables', unit: "kg", price: 35, minQuantity: 250, image: '/assets/Fresh Methi Leaves online in Jaipur.jpg' },
+  { productId: 'fresh-green-peas', name: 'Fresh Green Peas', category: 'Seasonal Vegetables', unit: "kg", price: 70, minQuantity: 250, image: '/assets/Fresh Green Peas online in Jaipur.jpg' },
+  { productId: 'fresh-green-beans', name: 'Fresh Green Beans', category: 'Seasonal Vegetables', unit: "kg", price: 65, minQuantity: 250, image: '/assets/Fresh Green Beans online in Jaipur.jpg' },
+  { productId: 'fresh-cauliflower', name: 'Fresh Cauliflower', category: 'Seasonal Vegetables', unit: "kg", price: 55, minQuantity: 250, image: '/assets/Fresh Cauliflower online in Jaipur.jpg' },
+  { productId: 'fresh-sweet-corn', name: 'Fresh Sweet Corn', category: 'Seasonal Vegetables', unit: "kg", price: 45, minQuantity: 250, image: '/assets/Fresh Sweet Corn online in Jaipur.jpg' },
+  { productId: 'fresh-pumpkin', name: 'Fresh Pumpkin', category: 'Seasonal Vegetables', unit: "kg", price: 45, minQuantity: 250, image: '/assets/Fresh Pumpkin online in Jaipur.jpg' },
+  { productId: 'fresh-bitter-gourd', name: 'Fresh Bitter Gourd', category: 'Seasonal Vegetables', unit: "kg", price: 60, minQuantity: 250, image: '/assets/Fresh Bitter Gourd online in Jaipur.jpg' },
+  { productId: 'fresh-broccoli', name: 'Fresh Broccoli', category: 'Exotic Vegetables', unit: "kg", price: 80, minQuantity: 250, image: '/assets/Fresh Broccoli online in Jaipur.jpg' },
+  { productId: 'fresh-eggplant', name: 'Fresh Eggplant', category: 'Exotic Vegetables', unit: "kg", price: 70, minQuantity: 250, image: '/assets/Fresh Eggplant online in Jaipur.jpg' },
+  { productId: 'fresh-red-capsicum', name: 'Fresh Red Capsicum', category: 'Exotic Vegetables', unit: "kg", price: 110, minQuantity: 250, image: '/assets/Fresh Red Capsicum online in Jaipur.jpg' },
+  { productId: 'fresh-yellow-capsicum', name: 'Fresh Yellow Capsicum', category: 'Exotic Vegetables', unit: "kg", price: 110, minQuantity: 250, image: '/assets/Fresh Yellow Capsicum online in Jaipur.jpg' },
+  { productId: 'fresh-mushroom', name: 'Fresh Mushroom', category: 'Exotic Vegetables', unit: "kg", price: 140, minQuantity: 250, image: '/assets/Fresh Mushroom online in Jaipur.jpg' },
+  { productId: 'fresh-purple-kale', name: 'Fresh Purple Kale', category: 'Exotic Vegetables', unit: "kg", price: 90, minQuantity: 250, image: '/assets/Fresh Kale online in Jaipur.jpg' },
+  { productId: 'fresh-asparagus', name: 'Fresh Asparagus', category: 'Exotic Vegetables', unit: "kg", price: 120, minQuantity: 250, image: '/assets/Fresh Asparagus online in Jaipur.jpg' },
+  { productId: 'fresh-premium-parsley', name: 'Fresh Premium Parsley', category: 'Exotic Vegetables', unit: "kg", price: 45, minQuantity: 250, image: '/assets/Fresh Parsley online in Jaipur.jpg' },
+  { productId: 'fresh-premium-zucchini', name: 'Fresh Premium Zucchini', category: 'Exotic Vegetables', unit: "kg", price: 80, minQuantity: 250, image: '/assets/Fresh Premium Zucchini online in Jaipur.jpg' }
+];
+
+async function seedProducts() {
+  for (const product of [...DEFAULT_MALA_PRODUCTS, ...DEFAULT_VEGETABLE_PRODUCTS]) {
     await Product.updateOne(
       { productId: product.productId },
       { $setOnInsert: product },
@@ -55,6 +101,30 @@ async function seedMalaProducts() {
     );
   }
 }
+
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await Product.find({ active: true })
+      .select("productId name category unit price minQuantity image")
+      .sort({ unit: 1, category: 1, name: 1 })
+      .lean();
+    res.json(products);
+  } catch {
+    res.status(500).json({ message: "Could not load products." });
+  }
+});
+
+app.get("/api/products/vegetables", async (req, res) => {
+  try {
+    const products = await Product.find({ unit: "kg", active: true })
+      .select("productId name category unit price minQuantity image")
+      .sort({ category: 1, name: 1 })
+      .lean();
+    res.json(products);
+  } catch {
+    res.status(500).json({ message: "Could not load vegetable prices." });
+  }
+});
 
 app.get("/api/products/malas", async (req, res) => {
   try {
@@ -81,12 +151,12 @@ app.patch("/api/admin/products/:productId", requireAdmin, async (req, res) => {
 
   try {
     const product = await Product.findOneAndUpdate(
-      { productId: req.params.productId, unit: "mala" },
+      { productId: req.params.productId, active: true },
       { $set: { price, minQuantity } },
       { new: true, runValidators: true }
     ).select("productId name category unit price minQuantity image").lean();
 
-    if (!product) return res.status(404).json({ message: "Mala product not found." });
+    if (!product) return res.status(404).json({ message: "Product not found." });
     res.json(product);
   } catch {
     res.status(500).json({ message: "Could not update product price." });
@@ -139,16 +209,29 @@ app.post("/api/orders", async (req, res) => {
       return res.status(400).json({ message: "Invalid product or quantity data." });
     }
 
-    const malaItems = cleanItems.filter(item => item.unit === "mala");
-    if (malaItems.length) {
-      const ids = [...new Set(malaItems.map(item => item.productId))];
-      const products = await Product.find({ productId: { $in: ids }, unit: "mala", active: true }).lean();
-      const byId = new Map(products.map(p => [p.productId, p]));
-      for (const item of malaItems) {
-        const product = byId.get(item.productId);
-        if (!product || item.quantity < product.minQuantity || Math.abs(item.price - product.price) > 0.001) {
+    const productIds = [...new Set(cleanItems.map(item => item.productId))];
+    const products = await Product.find({ productId: { $in: productIds }, active: true }).lean();
+    const byId = new Map(products.map(p => [p.productId, p]));
+
+    for (const item of cleanItems) {
+      const product = byId.get(item.productId);
+      if (!product || product.unit !== item.unit) {
+        return res.status(400).json({ message: "A product is no longer available. Please refresh the shop and try again." });
+      }
+
+      if (item.unit === "mala") {
+        if (item.quantity < product.minQuantity || Math.abs(item.price - product.price) > 0.001) {
           return res.status(400).json({ message: "Mala price or minimum quantity has changed. Please refresh the Mala page and add the product again." });
         }
+        item.price = product.price;
+        item.minQuantity = product.minQuantity;
+      } else {
+        const expectedPrice = Math.round(product.price * (item.grams / 1000) * 100) / 100;
+        if (item.grams < product.minQuantity || Math.abs(item.price - expectedPrice) > 0.01) {
+          return res.status(400).json({ message: "A vegetable price or quantity has changed. Please refresh the Vegetables page and add the product again." });
+        }
+        item.price = expectedPrice;
+        item.minQuantity = product.minQuantity;
       }
     }
 
@@ -260,8 +343,8 @@ async function start() {
 
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    await seedMalaProducts();
-    console.log("MongoDB connected and mala products ready.");
+    await seedProducts();
+    console.log("MongoDB connected and products ready.");
     app.listen(PORT, () => console.log(`FreshJaipur API running on port ${PORT}`));
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
