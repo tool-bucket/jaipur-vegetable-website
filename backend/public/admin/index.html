@@ -33,7 +33,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:16px}
 .actions select{min-width:180px}.delete-btn{background:#b94d4d}
-.empty{text-align:center;padding:45px}.price-list{display:grid;gap:10px;margin-top:15px}.price-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.price-toolbar input{flex:1;min-width:220px;background:#fff}.price-toolbar select{width:180px;background:#fff}.price-list{display:grid;gap:10px;margin-top:15px}.price-row{display:grid;grid-template-columns:1.6fr 150px 190px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e1e9e3;border-radius:12px;background:#f8fbf9}.price-row strong{display:block}.price-row small{color:#718078}.price-row input{width:100%;background:#fff}.save-price{white-space:nowrap}.unit-pill{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#eaf7f0;color:#198754;font-size:11px;font-weight:700}@media(max-width:700px){.price-row{grid-template-columns:1fr 1fr}.save-price{grid-column:1/-1}.price-toolbar select{width:100%}}
+.empty{text-align:center;padding:45px}.price-list{display:grid;gap:10px;margin-top:15px}.price-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.price-toolbar input{flex:1;min-width:220px;background:#fff}.price-toolbar select{width:180px;background:#fff}.price-list{display:grid;gap:10px;margin-top:15px}.price-row{display:grid;grid-template-columns:1.6fr 150px 190px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e1e9e3;border-radius:12px;background:#f8fbf9}.price-row strong{display:block}.price-row small{color:#718078}.price-row input{width:100%;background:#fff}.save-price{white-space:nowrap}.unit-pill{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#eaf7f0;color:#198754;font-size:11px;font-weight:700}.product-form{margin-top:16px;padding:18px;border:1px solid #dfe9e2;border-radius:14px;background:#f8fbf9}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.product-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#516158}.product-form input,.product-form select,.product-form textarea{background:#fff}.product-form textarea{width:100%;resize:vertical}.form-actions{display:flex;gap:10px;margin-top:12px}.price-row.inactive{opacity:.68;background:#f2f4f3}.status-pill{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700}.status-pill.active{background:#e7f7ee;color:#198754}.status-pill.inactive{background:#f2e8e8;color:#a54a4a}.product-image-mini{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid #dfe9e2;vertical-align:middle;margin-right:8px}.product-actions{display:flex;gap:6px;flex-wrap:wrap}.edit-btn{background:#356d9b}.archive-btn{background:#777}.delete-product-btn{background:#b94d4d}@media(max-width:900px){.form-grid{grid-template-columns:1fr 1fr}.price-row{grid-template-columns:1fr 1fr}}@media(max-width:600px){.form-grid{grid-template-columns:1fr}}@media(max-width:700px){.price-row{grid-template-columns:1fr 1fr}.save-price{grid-column:1/-1}.price-toolbar select{width:100%}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.wrap{margin-top:18px}}
 </style>
 </head>
@@ -79,15 +79,43 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
 <div class="card product-manager">
   <div class="top">
-    <div><h2 style="margin-bottom:5px">Product Prices</h2><p class="muted">Change vegetable prices and bulk mala prices from here. No code or GitHub update needed.</p></div>
-    <button class="secondary" onclick="loadProducts()">↻ Refresh Prices</button>
+    <div><h2 style="margin-bottom:5px">Product Manager</h2><p class="muted">Add, edit, activate/deactivate, change prices or remove products. No GitHub update needed for normal product changes.</p></div>
+    <div class="row">
+      <button class="secondary" onclick="toggleProductForm()">＋ Add Product</button>
+      <button class="secondary" onclick="loadProducts()">↻ Refresh</button>
+    </div>
   </div>
+
+  <div id="productForm" class="product-form" style="display:none">
+    <h3 id="productFormTitle">Add New Product</h3>
+    <input type="hidden" id="editingProductId">
+    <div class="form-grid">
+      <label>Product Name<input id="productName" maxlength="120" placeholder="Fresh Potato"></label>
+      <label>Category<input id="productCategory" maxlength="80" placeholder="Root Vegetables"></label>
+      <label>Unit<select id="productUnit"><option value="kg">Vegetable / kg</option><option value="mala">Bulk Mala / mala</option></select></label>
+      <label>Price per unit<input id="productPrice" type="number" min="0" step="0.01" placeholder="40"></label>
+      <label id="productMinLabel">Minimum quantity (grams)<input id="productMin" type="number" min="250" step="250" value="250"></label>
+      <label>Image URL / path<input id="productImage" maxlength="1000" placeholder="/assets/Fresh Potato online in Jaipur.jpg"></label>
+    </div>
+    <label>Description<textarea id="productDescription" maxlength="300" rows="3" placeholder="Fresh, carefully selected produce for everyday cooking."></textarea></label>
+    <div class="form-actions">
+      <button onclick="saveProductForm()">Save Product</button>
+      <button class="secondary" onclick="resetProductForm()">Cancel</button>
+    </div>
+    <p id="productFormMsg" class="muted"></p>
+  </div>
+
   <div class="price-toolbar">
-    <input id="productPriceSearch" placeholder="Search product..." oninput="renderProducts()">
+    <input id="productPriceSearch" placeholder="Search product, category or ID..." oninput="renderProducts()">
     <select id="productTypeFilter" onchange="renderProducts()">
       <option value="">All products</option>
       <option value="kg">Vegetables</option>
       <option value="mala">Bulk Mala</option>
+    </select>
+    <select id="productStatusFilter" onchange="renderProducts()">
+      <option value="">All statuses</option>
+      <option value="true">Active</option>
+      <option value="false">Inactive</option>
     </select>
   </div>
   <div id="productPrices" class="price-list"><div class="muted">Loading products...</div></div>
@@ -136,11 +164,15 @@ function logout() {
 
 let allProducts = [];
 
+function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+function js(value){return String(value??"").replace(/\\/g,"\\\\").replace(/'/g,"\\'");}
+
 async function loadProducts(){
   const root=document.getElementById("productPrices");
   root.innerHTML='<div class="muted">Loading products...</div>';
   try{
-    const r=await fetch(API+"/products");
+    const r=await fetch(API+"/admin/products",{headers:{Authorization:"Bearer "+token}});
+    if(r.status===401){logout();return;}
     const data=await r.json();
     if(!r.ok) throw new Error(data.message||"Could not load products.");
     allProducts=Array.isArray(data)?data:[];
@@ -152,52 +184,128 @@ function renderProducts(){
   const root=document.getElementById("productPrices");
   const q=(document.getElementById("productPriceSearch").value||"").trim().toLowerCase();
   const type=document.getElementById("productTypeFilter").value;
+  const status=document.getElementById("productStatusFilter").value;
   const products=allProducts.filter(p=>{
     const matchesText=!q || [p.name,p.category,p.productId].join(" ").toLowerCase().includes(q);
     const matchesType=!type || p.unit===type;
-    return matchesText && matchesType;
+    const matchesStatus=!status || String(Boolean(p.active))===status;
+    return matchesText && matchesType && matchesStatus;
   });
 
-  if(!products.length){
-    root.innerHTML='<div class="muted">No matching products found.</div>';
-    return;
-  }
+  if(!products.length){root.innerHTML='<div class="muted">No matching products found.</div>';return;}
 
   root.innerHTML=products.map(p=>{
     const isMala=p.unit==="mala";
     const unitLabel=isMala?"mala":"kg";
     const minLabel=isMala?`${Number(p.minQuantity)} malas`:`${Number(p.minQuantity)} g`;
     const typeLabel=isMala?"Bulk Mala":"Vegetable";
-    return `<div class="price-row" data-product-id="${esc(p.productId)}">
-      <div><strong>${esc(p.name)} <span class="unit-pill">${typeLabel}</span></strong><small>${esc(p.category)} · Price per ${unitLabel} · Minimum ${minLabel}</small></div>
+    const statusLabel=p.active?"Active":"Inactive";
+    const image=p.image||"/assets/favicon (1).jpg";
+    return `<div class="price-row ${p.active?'':'inactive'}" data-product-id="${esc(p.productId)}">
+      <div><div><img class="product-image-mini" src="${esc(image)}" alt=""> <strong>${esc(p.name)} <span class="unit-pill">${typeLabel}</span><span class="status-pill ${p.active?'active':'inactive'}">${statusLabel}</span></strong></div><small>${esc(p.category)} · ₹${Number(p.price).toLocaleString('en-IN')} / ${unitLabel} · Minimum ${minLabel}</small></div>
       <label><small>Price / ${unitLabel}</small><input class="price-input" type="number" min="0" step="0.01" value="${Number(p.price)}"></label>
-      <label><small>${isMala?"Minimum quantity (malas)":"Minimum quantity (grams)"}</small><input class="min-input" type="number" min="1" step="1" value="${Number(p.minQuantity)}"></label>
-      <button class="save-price" onclick="saveProduct('${js(p.productId)}',this)">Save</button>
+      <label><small>${isMala?'Minimum malas':'Minimum grams'}</small><input class="min-input" type="number" min="1" step="1" value="${Number(p.minQuantity)}"></label>
+      <div class="product-actions"><button class="save-price" onclick="saveQuickPrice('${js(p.productId)}',this)">Save</button><button class="edit-btn" onclick="editProduct('${js(p.productId)}')">Edit</button><button class="archive-btn" onclick="toggleProduct('${js(p.productId)}',${!p.active})">${p.active?'Deactivate':'Activate'}</button><button class="delete-product-btn" onclick="deleteProduct('${js(p.productId)}')">Delete</button></div>
     </div>`;
   }).join("");
 }
 
-async function saveProduct(productId,button){
+function toggleProductForm(){
+  const form=document.getElementById("productForm");
+  const hidden=form.style.display==="none";
+  form.style.display=hidden?"block":"none";
+  if(hidden) resetProductForm();
+}
+function resetProductForm(){
+  document.getElementById("editingProductId").value="";
+  document.getElementById("productFormTitle").textContent="Add New Product";
+  document.getElementById("productName").value="";
+  document.getElementById("productCategory").value="";
+  document.getElementById("productUnit").value="kg";
+  document.getElementById("productPrice").value="";
+  document.getElementById("productMin").value="250";
+  document.getElementById("productImage").value="";
+  document.getElementById("productDescription").value="";
+  document.getElementById("productFormMsg").textContent="";
+  updateMinLabel();
+}
+function updateMinLabel(){
+  const isMala=document.getElementById("productUnit").value==="mala";
+  document.getElementById("productMinLabel").firstChild.textContent=isMala?"Minimum quantity (malas)":"Minimum quantity (grams)";
+  const input=document.getElementById("productMin");
+  input.min=isMala?1:250; input.step=isMala?1:250;
+  if(!input.value || (!isMala && Number(input.value)<250)) input.value=isMala?20:250;
+}
+document.getElementById("productUnit").addEventListener("change",updateMinLabel);
+
+function editProduct(productId){
+  const p=allProducts.find(x=>x.productId===productId); if(!p)return;
+  document.getElementById("productForm").style.display="block";
+  document.getElementById("productFormTitle").textContent="Edit Product";
+  document.getElementById("editingProductId").value=p.productId;
+  document.getElementById("productName").value=p.name||"";
+  document.getElementById("productCategory").value=p.category||"";
+  document.getElementById("productUnit").value=p.unit||"kg";
+  document.getElementById("productPrice").value=p.price??"";
+  document.getElementById("productMin").value=p.minQuantity??250;
+  document.getElementById("productImage").value=p.image||"";
+  document.getElementById("productDescription").value=p.description||"";
+  document.getElementById("productFormMsg").textContent="Editing: "+p.name;
+  updateMinLabel();
+  document.getElementById("productForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function saveProductForm(){
+  const editing=document.getElementById("editingProductId").value.trim();
+  const body={name:document.getElementById("productName").value.trim(),category:document.getElementById("productCategory").value.trim(),unit:document.getElementById("productUnit").value,price:Number(document.getElementById("productPrice").value),minQuantity:Number(document.getElementById("productMin").value),image:document.getElementById("productImage").value.trim(),description:document.getElementById("productDescription").value.trim()};
+  const msg=document.getElementById("productFormMsg");
+  if(!body.name||!Number.isFinite(body.price)||body.price<0||!Number.isInteger(body.minQuantity)||body.minQuantity<1){msg.textContent="Please fill all required fields correctly.";return;}
+  if(body.unit==="kg" && body.minQuantity%250!==0){msg.textContent="Vegetable minimum quantity must be in 250 g steps.";return;}
+  msg.textContent="Saving...";
+  try{
+    const url=editing?API+"/admin/products/"+encodeURIComponent(editing):API+"/admin/products";
+    const r=await fetch(url,{method:editing?"PATCH":"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(r.status===401){logout();return;}
+    if(!r.ok)throw new Error(data.message||"Could not save product.");
+    msg.textContent=editing?"Product updated successfully.":"Product added successfully.";
+    await loadProducts();
+    setTimeout(()=>{resetProductForm();document.getElementById("productForm").style.display="none";},500);
+  }catch(e){msg.textContent=e.message;}
+}
+
+async function saveQuickPrice(productId,button){
   const row=button.closest('.price-row');
+  const p=allProducts.find(x=>x.productId===productId); if(!p)return;
   const price=Number(row.querySelector('.price-input').value);
   const minQuantity=Number(row.querySelector('.min-input').value);
-  const product=allProducts.find(p=>p.productId===productId);
-  if(!product) return;
-  if(!Number.isFinite(price)||price<0){alert('Enter a valid price.');return;}
-  if(!Number.isInteger(minQuantity)||minQuantity<1){alert('Enter a valid minimum quantity.');return;}
   const old=button.textContent; button.disabled=true; button.textContent='Saving...';
   try{
     const r=await fetch(API+"/admin/products/"+encodeURIComponent(productId),{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({price,minQuantity})});
     const data=await r.json();
     if(r.status===401){logout();return;}
-    if(!r.ok) throw new Error(data.message||'Could not save product.');
-    const index=allProducts.findIndex(p=>p.productId===productId);
-    if(index>=0) allProducts[index]=data;
+    if(!r.ok)throw new Error(data.message||'Could not save product.');
+    const index=allProducts.findIndex(x=>x.productId===productId); if(index>=0)allProducts[index]=data;
     renderProducts();
-    const newRow=[...document.querySelectorAll('.price-row')].find(el=>el.dataset.productId===productId);
-    const newButton=newRow?.querySelector('.save-price');
-    if(newButton){newButton.textContent='✓ Saved';setTimeout(()=>{if(newButton) newButton.textContent='Save';},1200);}
   }catch(e){button.disabled=false;button.textContent=old;alert(e.message);}
+}
+
+async function toggleProduct(productId,active){
+  try{
+    const r=await fetch(API+"/admin/products/"+encodeURIComponent(productId)+"/active",{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({active})});
+    const data=await r.json(); if(r.status===401){logout();return;} if(!r.ok)throw new Error(data.message||'Could not change status.');
+    const i=allProducts.findIndex(x=>x.productId===productId); if(i>=0)allProducts[i]=data; renderProducts();
+  }catch(e){alert(e.message);}
+}
+
+async function deleteProduct(productId){
+  const p=allProducts.find(x=>x.productId===productId); if(!p)return;
+  if(!confirm(`Delete "${p.name}" permanently?\n\nIf this product is already in an order, the system will ask you to deactivate it instead.`))return;
+  try{
+    const r=await fetch(API+"/admin/products/"+encodeURIComponent(productId),{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+    const data=await r.json(); if(r.status===401){logout();return;} if(!r.ok)throw new Error(data.message||'Could not delete product.');
+    allProducts=allProducts.filter(x=>x.productId!==productId); renderProducts();
+  }catch(e){alert(e.message);}
 }
 
 async function loadOrders() {
