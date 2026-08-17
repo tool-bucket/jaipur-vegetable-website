@@ -33,7 +33,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .map{display:inline-block;margin-top:8px;color:#198754;font-weight:700}
 .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:16px}
 .actions select{min-width:180px}.delete-btn{background:#b94d4d}
-.empty{text-align:center;padding:45px}.price-list{display:grid;gap:10px;margin-top:15px}.price-row{display:grid;grid-template-columns:1.5fr 150px 180px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e1e9e3;border-radius:12px;background:#f8fbf9}.price-row strong{display:block}.price-row small{color:#718078}.price-row input{width:100%;background:#fff}.save-price{white-space:nowrap}@media(max-width:700px){.price-row{grid-template-columns:1fr 1fr}.save-price{grid-column:1/-1}}
+.empty{text-align:center;padding:45px}.price-list{display:grid;gap:10px;margin-top:15px}.price-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.price-toolbar input{flex:1;min-width:220px;background:#fff}.price-toolbar select{width:180px;background:#fff}.price-list{display:grid;gap:10px;margin-top:15px}.price-row{display:grid;grid-template-columns:1.6fr 150px 190px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e1e9e3;border-radius:12px;background:#f8fbf9}.price-row strong{display:block}.price-row small{color:#718078}.price-row input{width:100%;background:#fff}.save-price{white-space:nowrap}.unit-pill{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#eaf7f0;color:#198754;font-size:11px;font-weight:700}@media(max-width:700px){.price-row{grid-template-columns:1fr 1fr}.save-price{grid-column:1/-1}.price-toolbar select{width:100%}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.wrap{margin-top:18px}}
 </style>
 </head>
@@ -79,10 +79,18 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
 <div class="card product-manager">
   <div class="top">
-    <div><h2 style="margin-bottom:5px">Mala Prices</h2><p class="muted">Change bulk mala prices and minimum order quantities from here. No code or GitHub update needed.</p></div>
-    <button class="secondary" onclick="loadMalaProducts()">↻ Refresh Prices</button>
+    <div><h2 style="margin-bottom:5px">Product Prices</h2><p class="muted">Change vegetable prices and bulk mala prices from here. No code or GitHub update needed.</p></div>
+    <button class="secondary" onclick="loadProducts()">↻ Refresh Prices</button>
   </div>
-  <div id="malaProducts" class="price-list"><div class="muted">Loading mala products...</div></div>
+  <div class="price-toolbar">
+    <input id="productPriceSearch" placeholder="Search product..." oninput="renderProducts()">
+    <select id="productTypeFilter" onchange="renderProducts()">
+      <option value="">All products</option>
+      <option value="kg">Vegetables</option>
+      <option value="mala">Bulk Mala</option>
+    </select>
+  </div>
+  <div id="productPrices" class="price-list"><div class="muted">Loading products...</div></div>
 </div>
 
 <div id="orders"></div>
@@ -108,7 +116,7 @@ function login() {
     token=x.token;
     localStorage.setItem("freshjaipur_admin_token",token);
     loginBox(false);
-    loadMalaProducts();
+    loadProducts();
     loadOrders();
   })
   .catch(e=>document.getElementById("loginMsg").textContent=e.message);
@@ -126,26 +134,55 @@ function logout() {
   loginBox(true);
 }
 
-async function loadMalaProducts(){
-  const root=document.getElementById("malaProducts");
-  root.innerHTML='<div class="muted">Loading mala products...</div>';
+let allProducts = [];
+
+async function loadProducts(){
+  const root=document.getElementById("productPrices");
+  root.innerHTML='<div class="muted">Loading products...</div>';
   try{
-    const r=await fetch(API+"/products/malas");
+    const r=await fetch(API+"/products");
     const data=await r.json();
-    if(!r.ok) throw new Error(data.message||"Could not load mala products.");
-    root.innerHTML=data.map(p=>`<div class="price-row" data-product-id="${esc(p.productId)}">
-      <div><strong>${esc(p.name)}</strong><small>Minimum bulk order: ${p.minQuantity} malas</small></div>
-      <label><small>Price / mala</small><input class="price-input" type="number" min="0" step="0.01" value="${Number(p.price)}"></label>
-      <label><small>Minimum quantity</small><input class="min-input" type="number" min="1" step="1" value="${Number(p.minQuantity)}"></label>
-      <button class="save-price" onclick="saveMalaProduct('${js(p.productId)}',this)">Save</button>
-    </div>`).join("") || '<div class="muted">No mala products found.</div>';
+    if(!r.ok) throw new Error(data.message||"Could not load products.");
+    allProducts=Array.isArray(data)?data:[];
+    renderProducts();
   }catch(e){root.innerHTML='<div class="muted">'+esc(e.message)+'</div>';}
 }
 
-async function saveMalaProduct(productId,button){
+function renderProducts(){
+  const root=document.getElementById("productPrices");
+  const q=(document.getElementById("productPriceSearch").value||"").trim().toLowerCase();
+  const type=document.getElementById("productTypeFilter").value;
+  const products=allProducts.filter(p=>{
+    const matchesText=!q || [p.name,p.category,p.productId].join(" ").toLowerCase().includes(q);
+    const matchesType=!type || p.unit===type;
+    return matchesText && matchesType;
+  });
+
+  if(!products.length){
+    root.innerHTML='<div class="muted">No matching products found.</div>';
+    return;
+  }
+
+  root.innerHTML=products.map(p=>{
+    const isMala=p.unit==="mala";
+    const unitLabel=isMala?"mala":"kg";
+    const minLabel=isMala?`${Number(p.minQuantity)} malas`:`${Number(p.minQuantity)} g`;
+    const typeLabel=isMala?"Bulk Mala":"Vegetable";
+    return `<div class="price-row" data-product-id="${esc(p.productId)}">
+      <div><strong>${esc(p.name)} <span class="unit-pill">${typeLabel}</span></strong><small>${esc(p.category)} · Price per ${unitLabel} · Minimum ${minLabel}</small></div>
+      <label><small>Price / ${unitLabel}</small><input class="price-input" type="number" min="0" step="0.01" value="${Number(p.price)}"></label>
+      <label><small>${isMala?"Minimum quantity (malas)":"Minimum quantity (grams)"}</small><input class="min-input" type="number" min="1" step="1" value="${Number(p.minQuantity)}"></label>
+      <button class="save-price" onclick="saveProduct('${js(p.productId)}',this)">Save</button>
+    </div>`;
+  }).join("");
+}
+
+async function saveProduct(productId,button){
   const row=button.closest('.price-row');
   const price=Number(row.querySelector('.price-input').value);
   const minQuantity=Number(row.querySelector('.min-input').value);
+  const product=allProducts.find(p=>p.productId===productId);
+  if(!product) return;
   if(!Number.isFinite(price)||price<0){alert('Enter a valid price.');return;}
   if(!Number.isInteger(minQuantity)||minQuantity<1){alert('Enter a valid minimum quantity.');return;}
   const old=button.textContent; button.disabled=true; button.textContent='Saving...';
@@ -153,12 +190,13 @@ async function saveMalaProduct(productId,button){
     const r=await fetch(API+"/admin/products/"+encodeURIComponent(productId),{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({price,minQuantity})});
     const data=await r.json();
     if(r.status===401){logout();return;}
-    if(!r.ok) throw new Error(data.message||'Could not save price.');
-    row.querySelector('.price-input').value=data.price;
-    row.querySelector('.min-input').value=data.minQuantity;
-    row.querySelector('small').textContent='Minimum bulk order: '+data.minQuantity+' malas';
-    button.textContent='✓ Saved';
-    setTimeout(()=>{button.textContent=old;button.disabled=false;},1200);
+    if(!r.ok) throw new Error(data.message||'Could not save product.');
+    const index=allProducts.findIndex(p=>p.productId===productId);
+    if(index>=0) allProducts[index]=data;
+    renderProducts();
+    const newRow=[...document.querySelectorAll('.price-row')].find(el=>el.dataset.productId===productId);
+    const newButton=newRow?.querySelector('.save-price');
+    if(newButton){newButton.textContent='✓ Saved';setTimeout(()=>{if(newButton) newButton.textContent='Save';},1200);}
   }catch(e){button.disabled=false;button.textContent=old;alert(e.message);}
 }
 
@@ -304,7 +342,7 @@ function formatDate(v){try{return new Date(v).toLocaleString("en-IN",{dateStyle:
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function js(v){return String(v).replace(/\\/g,"\\\\").replace(/'/g,"\\'");}
 
-if(token){loginBox(false);loadMalaProducts();loadOrders();}
+if(token){loginBox(false);loadProducts();loadOrders();}
 </script>
 </body>
 </html>
