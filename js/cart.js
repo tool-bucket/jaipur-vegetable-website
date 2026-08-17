@@ -104,8 +104,9 @@ function showAddCelebration(product, amountLabel) {
 }
 function addToCart(product, grams) {
     grams = Number(grams);
-    if (!Number.isFinite(grams) || grams < 250) {
-        alert("Minimum quantity 250 g hai.");
+    const minimumGrams = Number(product.minQuantity || 250);
+    if (!Number.isFinite(grams) || grams < minimumGrams) {
+        alert(`Minimum quantity ${formatWeight(minimumGrams)} hai.`);
         return;
     }
     const cart=getCart();
@@ -119,7 +120,7 @@ function addToCart(product, grams) {
         cart.push({
             id, productId:product.id, name:product.name, price,
             pricePerKg:product.pricePerKg, grams, category:product.category,
-            image:product.image, quantity:1, note:"", unit:"kg", minQuantity:1
+            image:product.image, quantity:1, note:"", unit:"kg", minQuantity:Number(product.minQuantity || 250)
         });
     }
     saveCart(cart);
@@ -153,14 +154,15 @@ function addBulkMalaToCart(product, quantity) {
     showAddCelebration(product, `${quantity} mala`);
     return true;
 }
-function getSelectedGrams(card) {
+function getSelectedGrams(card, product) {
     const select = card.querySelector(".weight-select");
     if (!select) return 1000;
     if (select.value !== "custom") return Number(select.value);
     const custom = card.querySelector(".custom-weight-input");
     const kg = Number(custom?.value);
-    if (!Number.isFinite(kg) || kg < 0.25) {
-        alert("Custom quantity kam se kam 0.25 kg honi chahiye.");
+    const minimumKg = Number(product?.minQuantity || 250) / 1000;
+    if (!Number.isFinite(kg) || kg < minimumKg) {
+        alert(`Custom quantity kam se kam ${minimumKg} kg honi chahiye.`);
         custom?.focus();
         return null;
     }
@@ -203,7 +205,7 @@ function initAddToCartButtons() {
                 }
                 return;
             }
-            const grams=getSelectedGrams(card);
+            const grams=getSelectedGrams(card, product);
             if (!grams) return;
             addToCart(product, grams);
             const old=button.innerHTML;
@@ -222,13 +224,14 @@ function addWeightSelectors() {
         if(!priceEl || !addBtn) return;
         const wrap=document.createElement("div");
         wrap.className="weight-picker";
+        const minimumGrams = Number(card.dataset.minQuantity || 250);
+        const standardWeights = [250,500,1000,2000,5000].filter(g => g >= minimumGrams);
+        if (!standardWeights.length) standardWeights.push(minimumGrams);
+        const selectedWeight = standardWeights.includes(1000) ? 1000 : standardWeights[0];
+        const options = standardWeights.map(g => `<option value="${g}" ${g===selectedWeight?'selected':''}>${formatWeight(g)}${g===250?' (¼ kg)':g===500?' (½ kg)':''}</option>`).join('');
         wrap.innerHTML=`<label>Quantity</label>
             <select class="weight-select" aria-label="Choose quantity">
-              <option value="250">250 g (¼ kg)</option>
-              <option value="500">500 g (½ kg)</option>
-              <option value="1000" selected>1 kg</option>
-              <option value="2000">2 kg</option>
-              <option value="5000">5 kg</option>
+              ${options}
               <option value="custom">Custom</option>
             </select>
             <input class="custom-weight-input" type="number" min="0.25" step="0.25" placeholder="kg" aria-label="Custom quantity in kilograms" hidden>`;
