@@ -40,10 +40,10 @@ function makeOrderId() {
 }
 
 const DEFAULT_MALA_PRODUCTS = [
-  { productId: "gulab-red-mala", name: "Gulab Mala – Red", category: "Gulab Mala", unit: "mala", price: 15, minQuantity: 20, image: "/assets/Gulab Red Bulk Mala.svg" },
-  { productId: "gulab-yellow-mala", name: "Gulab Mala – Yellow", category: "Gulab Mala", unit: "mala", price: 15, minQuantity: 20, image: "/assets/Gulab Yellow Bulk Mala.svg" },
-  { productId: "hazara-mala", name: "Hazara Ki Mala", category: "Hazara Mala", unit: "mala", price: 10, minQuantity: 50, image: "/assets/Hazara Mala.svg" },
-  { productId: "rukhadi-mala", name: "Rukhadi", category: "Rukhadi", unit: "mala", price: 20, minQuantity: 50, image: "/assets/Rukhadi Mala.svg" }
+  { productId: "gulab-red-mala", name: "Gulab Mala – Red", description: "Fresh red rose malas for weddings, functions and event decoration.", category: "Gulab Mala", unit: "mala", price: 15, minQuantity: 20, image: "/assets/Gulab Red Bulk Mala.svg" },
+  { productId: "gulab-yellow-mala", name: "Gulab Mala – Yellow", description: "Fresh yellow rose malas for weddings, functions and special events.", category: "Gulab Mala", unit: "mala", price: 15, minQuantity: 20, image: "/assets/Gulab Yellow Bulk Mala.svg" },
+  { productId: "hazara-mala", name: "Hazara Ki Mala", description: "Fresh Hazara flower malas for bulk function and event orders.", category: "Hazara Mala", unit: "mala", price: 10, minQuantity: 50, image: "/assets/Hazara Mala.svg" },
+  { productId: "rukhadi-mala", name: "Rukhadi", description: "Fresh Rukhadi malas for bulk function, event and decoration requirements.", category: "Rukhadi", unit: "mala", price: 20, minQuantity: 50, image: "/assets/Rukhadi Mala.svg" }
 ];
 
 const DEFAULT_VEGETABLE_PRODUCTS = [
@@ -105,7 +105,7 @@ async function seedProducts() {
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find({ active: true })
-      .select("productId name category unit price minQuantity image")
+      .select("productId name category description unit price minQuantity image active")
       .sort({ unit: 1, category: 1, name: 1 })
       .lean();
     res.json(products);
@@ -114,10 +114,22 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+app.get("/api/admin/products", requireAdmin, async (req, res) => {
+  try {
+    const products = await Product.find()
+      .select("productId name category description unit price minQuantity image active")
+      .sort({ active: -1, unit: 1, category: 1, name: 1 })
+      .lean();
+    res.json(products);
+  } catch {
+    res.status(500).json({ message: "Could not load product manager." });
+  }
+});
+
 app.get("/api/products/vegetables", async (req, res) => {
   try {
     const products = await Product.find({ unit: "kg", active: true })
-      .select("productId name category unit price minQuantity image")
+      .select("productId name category description unit price minQuantity image active")
       .sort({ category: 1, name: 1 })
       .lean();
     res.json(products);
@@ -129,7 +141,7 @@ app.get("/api/products/vegetables", async (req, res) => {
 app.get("/api/products/malas", async (req, res) => {
   try {
     const products = await Product.find({ unit: "mala", active: true })
-      .select("productId name category unit price minQuantity image")
+      .select("productId name category description unit price minQuantity image active")
       .sort({ createdAt: 1 })
       .lean();
     res.json(products);
@@ -138,28 +150,104 @@ app.get("/api/products/malas", async (req, res) => {
   }
 });
 
+function slugifyProductId(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 70) || `product-${Date.now()}`;
+}
+
+function cleanProductPayload(body = {}) {
+  const name = String(body.name || "").trim().slice(0, 120);
+  const category = String(body.category || (body.unit === "mala" ? "Mala" : "Daily Use")).trim().slice(0, 80);
+  const description = String(body.description || "Fresh, carefully selected produce for your needs.").trim().slice(0, 300);
+  const unit = body.unit === "mala" ? "mala" : "kg";
+  const price = Number(body.price);
+  const minQuantity = Number(body.minQuantity);
+  const image = String(body.image || "").trim().slice(0, 1000);
+
+  if (!name) throw new Error("Product name is required.");
+  if (!Number.isFinite(price) || price < 0 || price > 100000) throw new Error("Enter a valid price.");
+  if (!Number.isInteger(minQuantity) || minQuantity < 1 || minQuantity > 50000) throw new Error("Enter a valid minimum quantity.");
+  if (unit === "kg" && minQuantity % 250 !== 0) throw new Error("Vegetable minimum quantity must be in 250 g steps.");
+
+  return { name, category, description, unit, price, minQuantity, image };
+}
+
+app.post("/api/admin/products", requireAdmin, async (req, res) => {
+  try {
+    const payload = cleanProductPayload(req.body);
+    let productId = slugifyProductId(req.body.productId || payload.name);
+    const existing = await Product.findOne({ productId }).lean();
+    if (existing) {
+      return res.status(409).json({ message: "A product with this name/ID already exists. Use Edit instead." });
+    }
+
+    const product = await Product.create({ ...payload, productId, active: true });
+    res.status(201).json(product);
+  } catch (error) {
+    const message = error?.message || "Could not add product.";
+    res.status(400).json({ message });
+  }
+});
+
 app.patch("/api/admin/products/:productId", requireAdmin, async (req, res) => {
-  const price = Number(req.body?.price);
-  const minQuantity = Number(req.body?.minQuantity);
+  try {
+    const existing = await Product.findOne({ productId: req.params.productId });
+    if (!existing) return res.status(404).json({ message: "Product not found." });
 
-  if (!Number.isFinite(price) || price < 0 || price > 100000) {
-    return res.status(400).json({ message: "Enter a valid price." });
-  }
-  if (!Number.isInteger(minQuantity) || minQuantity < 1 || minQuantity > 50000) {
-    return res.status(400).json({ message: "Enter a valid minimum quantity." });
-  }
+    const payload = cleanProductPayload({
+      name: req.body.name ?? existing.name,
+      category: req.body.category ?? existing.category,
+      description: req.body.description ?? existing.description,
+      unit: req.body.unit ?? existing.unit,
+      price: req.body.price ?? existing.price,
+      minQuantity: req.body.minQuantity ?? existing.minQuantity,
+      image: req.body.image ?? existing.image
+    });
 
+    existing.set(payload);
+    if (typeof req.body.active === "boolean") existing.active = req.body.active;
+    await existing.save();
+    res.json(existing.toObject());
+  } catch (error) {
+    res.status(400).json({ message: error?.message || "Could not update product." });
+  }
+});
+
+app.patch("/api/admin/products/:productId/active", requireAdmin, async (req, res) => {
+  if (typeof req.body?.active !== "boolean") {
+    return res.status(400).json({ message: "Active must be true or false." });
+  }
   try {
     const product = await Product.findOneAndUpdate(
-      { productId: req.params.productId, active: true },
-      { $set: { price, minQuantity } },
-      { new: true, runValidators: true }
-    ).select("productId name category unit price minQuantity image").lean();
-
+      { productId: req.params.productId },
+      { $set: { active: req.body.active } },
+      { new: true }
+    ).lean();
     if (!product) return res.status(404).json({ message: "Product not found." });
     res.json(product);
   } catch {
-    res.status(500).json({ message: "Could not update product price." });
+    res.status(500).json({ message: "Could not change product status." });
+  }
+});
+
+app.delete("/api/admin/products/:productId", requireAdmin, async (req, res) => {
+  try {
+    const product = await Product.findOne({ productId: req.params.productId }).lean();
+    if (!product) return res.status(404).json({ message: "Product not found." });
+
+    const usedInOrders = await Order.exists({ "items.productId": product.productId });
+    if (usedInOrders) {
+      return res.status(409).json({ message: "This product is already present in an order. Deactivate it instead of permanently deleting it." });
+    }
+
+    await Product.deleteOne({ productId: product.productId });
+    res.json({ message: "Product deleted successfully.", productId: product.productId });
+  } catch {
+    res.status(500).json({ message: "Could not delete product." });
   }
 });
 
